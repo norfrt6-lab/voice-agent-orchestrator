@@ -138,7 +138,13 @@ class AutoImprover:
             "target_prompt": "ESCALATION triggers",
             "section": "Escalation thresholds",
             "current_behavior": "Call escalated without clear trigger",
-            "suggested_change": None,  # Built dynamically in _build_escalation_suggestion()
+            "suggested_change": (
+                "Review escalation thresholds: increase confusion_threshold "
+                f"from {settings.guardrails.confusion_threshold} to "
+                f"{settings.guardrails.confusion_threshold + 1}, "
+                "and require at least one frustration keyword before "
+                "auto-escalating."
+            ),
             "expected_impact": "Reduce unnecessary escalations by 30-50%",
             "priority": "medium",
         },
@@ -156,15 +162,6 @@ class AutoImprover:
         },
     }
 
-    @staticmethod
-    def _build_escalation_suggestion() -> str:
-        threshold = settings.guardrails.confusion_threshold
-        return (
-            f"Review escalation thresholds: increase confusion_threshold from "
-            f"{threshold} to {threshold + 1}, "
-            "and require at least one frustration keyword before auto-escalating."
-        )
-
     def suggest_improvements(self, failures: list[DetectedFailure]) -> list[PromptSuggestion]:
         """Generate prompt improvement suggestions from detected failures."""
         suggestions: list[PromptSuggestion] = []
@@ -177,15 +174,12 @@ class AutoImprover:
 
             template = self.FIX_TEMPLATES.get(failure.pattern)
             if template:
-                change = template["suggested_change"]
-                if change is None and failure.pattern == FailurePattern.UNNECESSARY_ESCALATION:
-                    change = self._build_escalation_suggestion()
                 suggestions.append(
                     PromptSuggestion(
                         target_prompt=template["target_prompt"],
                         section=template["section"],
                         current_behavior=template["current_behavior"],
-                        suggested_change=change,
+                        suggested_change=template["suggested_change"],
                         expected_impact=template["expected_impact"],
                         priority=template["priority"],
                         failure_pattern=failure.pattern,

@@ -5,6 +5,7 @@ from src.conversation.guardrails import (
     HallucinationGuardrail,
     PersonaGuardrail,
     ScopeGuardrail,
+    Severity,
 )
 
 
@@ -33,7 +34,7 @@ class TestScopeGuardrail:
         result = self.guard.check_topic_scope("Can you give me financial advice?")
         assert result.passed is False
         assert result.violation_type == "out_of_scope_topic"
-        assert result.severity == "block"
+        assert result.severity == Severity.BLOCK
 
     def test_in_scope_topic(self):
         result = self.guard.check_topic_scope("I need help with my kitchen sink")
@@ -133,7 +134,7 @@ class TestEscalationGuardrail:
         result = self.guard.check_escalation_needed("I think I have a gas leak!")
         assert result.passed is False
         assert result.violation_type == "emergency"
-        assert result.severity == "escalate"
+        assert result.severity == Severity.ESCALATE
 
     def test_flooding_triggers_emergency(self):
         result = self.guard.check_escalation_needed("My house is flooding!")
@@ -165,6 +166,7 @@ class TestEscalationGuardrail:
         result = self.guard.check_escalation_needed("Help me", error_count=5)
         assert result.passed is False
         assert result.violation_type == "repeated_confusion"
+        assert result.severity == Severity.ESCALATE
 
     def test_below_error_threshold_passes(self):
         result = self.guard.check_escalation_needed("Help me", error_count=1)

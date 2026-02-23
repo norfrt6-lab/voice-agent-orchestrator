@@ -1,11 +1,36 @@
 """Service catalog with pricing, durations, and descriptions."""
 
 import logging
-from typing import Optional
+from typing import Optional, TypedDict
 
 logger = logging.getLogger(__name__)
 
-SERVICE_CATALOG: dict[str, dict] = {
+
+class ServiceInfo(TypedDict):
+    """Full service catalog entry."""
+
+    name: str
+    description: str
+    price_range: str
+    call_out_fee: str
+    typical_duration: str
+    emergency_available: bool
+
+
+class ServiceDetail(ServiceInfo):
+    """Service detail with ID included."""
+
+    id: str
+
+
+class ServiceSummary(TypedDict):
+    """Abbreviated service listing."""
+
+    id: str
+    name: str
+    price_range: str
+
+SERVICE_CATALOG: dict[str, ServiceInfo] = {
     "plumbing": {
         "name": "Plumbing Service",
         "description": (
@@ -108,7 +133,7 @@ def get_valid_service_terms() -> list[str]:
     return list(SERVICE_CATALOG.keys()) + list(SERVICE_ALIASES.keys())
 
 
-def get_all_services() -> list[dict]:
+def get_all_services() -> list[ServiceSummary]:
     """Return all services with basic info."""
     return [
         {"id": sid, "name": info["name"], "price_range": info["price_range"]}
@@ -116,7 +141,7 @@ def get_all_services() -> list[dict]:
     ]
 
 
-def get_service_details(service_id: str) -> Optional[dict]:
+def get_service_details(service_id: str) -> Optional[ServiceDetail]:
     """Get full details for a specific service."""
     normalized = service_id.lower().strip()
     for sid, info in SERVICE_CATALOG.items():

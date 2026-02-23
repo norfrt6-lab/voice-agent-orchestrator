@@ -5,12 +5,25 @@ In production, this would query a CRM database (e.g. HubSpot, Salesforce,
 ServiceTitan customer records) to identify returning callers.
 """
 
-import logging
-from typing import Optional
+from typing import Optional, TypedDict, cast
 
-logger = logging.getLogger(__name__)
+from src.logging_context import get_call_logger
+from src.utils import normalize_phone
 
-_customers: dict[str, dict] = {
+logger = get_call_logger(__name__)
+
+
+class CustomerRecord(TypedDict):
+    """Customer record stored in the system."""
+
+    name: str
+    phone: str
+    email: str
+    address: str
+    previous_bookings: int
+    notes: str
+
+_SEED_CUSTOMERS: dict[str, CustomerRecord] = {
     "0412345678": {
         "name": "John Smith",
         "phone": "0412345678",
@@ -29,10 +42,14 @@ _customers: dict[str, dict] = {
     },
 }
 
+_customers: dict[str, CustomerRecord] = {
+    k: cast(CustomerRecord, {**v}) for k, v in _SEED_CUSTOMERS.items()
+}
 
-def lookup_customer(phone: str) -> Optional[dict]:
+
+def lookup_customer(phone: str) -> Optional[CustomerRecord]:
     """Look up a customer by phone number. Returns None if not found."""
-    cleaned = phone.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+    cleaned = normalize_phone(phone)
     if cleaned.startswith("+61"):
         cleaned = "0" + cleaned[3:]
     result = _customers.get(cleaned)
@@ -43,10 +60,10 @@ def lookup_customer(phone: str) -> Optional[dict]:
 
 def create_customer(
     name: str, phone: str, email: Optional[str] = None, address: Optional[str] = None
-) -> dict:
+) -> CustomerRecord:
     """Create a new customer record."""
-    cleaned = phone.replace(" ", "").replace("-", "")
-    customer = {
+    cleaned = normalize_phone(phone)
+    customer: CustomerRecord = {
         "name": name,
         "phone": cleaned,
         "email": email or "",
@@ -57,3 +74,11 @@ def create_customer(
     _customers[cleaned] = customer
     logger.info("New customer created: %s (%s)", name, cleaned)
     return customer
+
+
+def reset() -> None:
+    """Restore customers to seed data. Used by test fixtures for isolation."""
+    _customers.clear()
+    _customers.update({
+        k: cast(CustomerRecord, {**v}) for k, v in _SEED_CUSTOMERS.items()
+    })

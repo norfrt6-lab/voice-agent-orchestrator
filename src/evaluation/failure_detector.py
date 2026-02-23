@@ -6,6 +6,7 @@ each with severity and contextual evidence for root-cause analysis.
 """
 
 import logging
+import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
@@ -14,6 +15,19 @@ from src.config import settings
 from src.schemas.conversation_schema import CallOutcome, ConversationTranscript, Speaker
 
 logger = logging.getLogger(__name__)
+
+
+def _compile_patterns(phrases: list[str]) -> re.Pattern[str]:
+    """Compile a list of phrases into a single word-boundary regex."""
+    escaped = [re.escape(p) for p in phrases]
+    return re.compile(r"\b(?:" + "|".join(escaped) + r")\b", re.IGNORECASE)
+
+# Detection thresholds
+REPEATED_SLOT_THRESHOLD = 3
+CONFIRMATION_LOOP_THRESHOLD = 3
+MAX_REASONABLE_AGENTS = 3
+INCOMPLETE_BOOKING_MIN_SLOTS = 4
+TOTAL_REQUIRED_SLOTS = 6
 
 
 class FailurePattern(str, Enum):
@@ -31,15 +45,86 @@ class FailurePattern(str, Enum):
     SLOW_RESPONSE = "slow_response"
 
 
+class FailureSeverity(str, Enum):
+    """Severity levels for detected failures."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
 @dataclass
 class DetectedFailure:
     """A single detected failure with evidence."""
 
     pattern: FailurePattern
-    severity: str  # "low", "medium", "high", "critical"
+    severity: FailureSeverity
     evidence: str
     turn_index: Optional[int] = None
     recommendation: str = ""
+
+
+_SLOT_KEYWORDS = ["name", "phone", "number", "address", "date", "time", "service"]
+_SLOT_QUESTION_WORDS = ["what", "could", "can you"]
+_SLOT_KW_RE = _compile_patterns(_SLOT_KEYWORDS)
+_SLOT_Q_RE = _compile_patterns(_SLOT_QUESTION_WORDS)
+
+_CONFIRMATION_PHRASES = [
+    "does everything sound correct",
+    "let me confirm",
+    "here's what i have",
+]
+_CONFIRMATION_RE = _compile_patterns(_CONFIRMATION_PHRASES)
+
+_OUT_OF_SCOPE_TOPICS = [
+    "medical",
+    "legal advice",
+    "financial advice",
+    "competitor",
+    "political",
+    "investment",
+    "cryptocurrency",
+]
+_OUT_OF_SCOPE_RE = _compile_patterns(_OUT_OF_SCOPE_TOPICS)
+_SCOPE_DEFLECTION_RE = _compile_patterns(["i can't help with", "outside"])
+
+_FRUSTRATION_PHRASES = [
+    "i already told you",
+    "this is ridiculous",
+    "useless",
+    "speak to a person",
+    "real person",
+    "manager",
+    "supervisor",
+    "worst service",
+    "unacceptable",
+]
+_FRUSTRATION_RE = _compile_patterns(_FRUSTRATION_PHRASES)
+_ESCALATION_RESPONSE_RE = _compile_patterns(["transfer", "connect", "apologize", "sorry"])
+
+_HALLUCINATION_CLAIMS = [
+    "guarantee",
+    "warranty",
+    "award-winning",
+    "best in the city",
+    "cheapest",
+    "lowest price",
+    "fully insured",
+    "fully licensed",
+]
+_HALLUCINATION_RE = _compile_patterns(_HALLUCINATION_CLAIMS)
+
+_BOOKING_SIGNALS = ["book", "appointment", "schedule", "come out", "send someone"]
+_INFO_SIGNALS = ["how much", "price", "cost", "what services", "do you offer"]
+_BOOKING_RE = _compile_patterns(_BOOKING_SIGNALS)
+_INFO_RE = _compile_patterns(_INFO_SIGNALS)
+_BOOKING_RESPONSE_RE = _compile_patterns(["book", "name", "appointment", "schedule"])
+_INFO_RESPONSE_RE = _compile_patterns(["price", "service", "cost", "offer"])
+
+_USER_ESCALATION_RE = _compile_patterns(
+    ["manager", "supervisor", "human", "real person", "speak to"]
+)
 
 
 class FailureDetector:
@@ -75,19 +160,18 @@ class FailureDetector:
         for i, turn in enumerate(transcript.turns):
             if turn.speaker != Speaker.AGENT:
                 continue
-            text = turn.text.lower()
-            for slot_keyword in ["name", "phone", "number", "address", "date", "time", "service"]:
-                if slot_keyword in text and (
-                    "what" in text or "could" in text or "can you" in text
-                ):
-                    slot_questions.setdefault(slot_keyword, []).append(i)
+            text = turn.text
+            if not _SLOT_Q_RE.search(text):
+                continue
+            for match in _SLOT_KW_RE.finditer(text):
+                slot_questions.setdefault(match.group().lower(), []).append(i)
 
         for slot, indices in slot_questions.items():
-            if len(indices) >= 3:
+            if len(indices) >= REPEATED_SLOT_THRESHOLD:
                 failures.append(
                     DetectedFailure(
                         pattern=FailurePattern.REPEATED_SLOT_FAILURE,
-                        severity="high",
+                        severity=FailureSeverity.HIGH,
                         evidence=f"Agent asked for '{slot}' {len(indices)} times (turns {indices})",
                         turn_index=indices[-1],
                         recommendation=(
@@ -109,18 +193,13 @@ class FailureDetector:
 
         for i, turn in enumerate(transcript.turns):
             if turn.speaker == Speaker.AGENT:
-                text = turn.text.lower()
-                if (
-                    "does everything sound correct" in text
-                    or "let me confirm" in text
-                    or "here's what i have" in text
-                ):
+                if _CONFIRMATION_RE.search(turn.text):
                     confirmation_count += 1
-                    if confirmation_count >= 3:
+                    if confirmation_count >= CONFIRMATION_LOOP_THRESHOLD:
                         failures.append(
                             DetectedFailure(
                                 pattern=FailurePattern.CONFIRMATION_LOOP,
-                                severity="medium",
+                                severity=FailureSeverity.MEDIUM,
                                 evidence=(
                                     "Confirmation read-back repeated"
                                     f" {confirmation_count} times"
@@ -143,11 +222,11 @@ class FailureDetector:
         failures = []
         agents_used = transcript.agents_used or []
 
-        if len(agents_used) > 3:
+        if len(agents_used) > MAX_REASONABLE_AGENTS:
             failures.append(
                 DetectedFailure(
                     pattern=FailurePattern.WRONG_AGENT_HANDOFF,
-                    severity="medium",
+                    severity=FailureSeverity.MEDIUM,
                     evidence=f"Caller passed through {len(agents_used)} agents: {agents_used}",
                     recommendation="Review intent detection to reduce unnecessary handoffs.",
                 )
@@ -158,41 +237,30 @@ class FailureDetector:
     def _detect_scope_violation(self, transcript: ConversationTranscript) -> list[DetectedFailure]:
         """Detect when the agent responds to out-of-scope topics."""
         failures = []
-        out_of_scope = [
-            "medical",
-            "legal advice",
-            "financial advice",
-            "competitor",
-            "political",
-            "investment",
-            "cryptocurrency",
-        ]
 
         for i, turn in enumerate(transcript.turns):
             if turn.speaker == Speaker.AGENT:
-                lower = turn.text.lower()
-                for topic in out_of_scope:
-                    if (
-                        topic in lower
-                        and "i can't help with" not in lower
-                        and "outside" not in lower
-                    ):
-                        failures.append(
-                            DetectedFailure(
-                                pattern=FailurePattern.SCOPE_VIOLATION,
-                                severity="high",
-                                evidence=(
-                                    f"Agent response contains"
-                                    f" out-of-scope topic"
-                                    f" '{topic}' at turn {i}"
-                                ),
-                                turn_index=i,
-                                recommendation=(
-                                    "Add scope guardrail for"
-                                    f" '{topic}' topic."
-                                ),
-                            )
+                text = turn.text
+                if _SCOPE_DEFLECTION_RE.search(text):
+                    continue
+                for match in _OUT_OF_SCOPE_RE.finditer(text):
+                    topic = match.group().lower()
+                    failures.append(
+                        DetectedFailure(
+                            pattern=FailurePattern.SCOPE_VIOLATION,
+                            severity=FailureSeverity.HIGH,
+                            evidence=(
+                                f"Agent response contains"
+                                f" out-of-scope topic"
+                                f" '{topic}' at turn {i}"
+                            ),
+                            turn_index=i,
+                            recommendation=(
+                                "Add scope guardrail for"
+                                f" '{topic}' topic."
+                            ),
                         )
+                    )
 
         return failures
 
@@ -201,55 +269,39 @@ class FailureDetector:
     ) -> list[DetectedFailure]:
         """Detect signs of caller frustration not addressed by escalation."""
         failures = []
-        frustration_keywords = [
-            "i already told you",
-            "this is ridiculous",
-            "useless",
-            "speak to a person",
-            "real person",
-            "manager",
-            "supervisor",
-            "worst service",
-            "unacceptable",
-        ]
 
         for i, turn in enumerate(transcript.turns):
             if turn.speaker != Speaker.USER:
                 continue
-            lower = turn.text.lower()
-            for keyword in frustration_keywords:
-                if keyword in lower:
-                    # Check if next agent turn addresses it
-                    escalated = False
-                    for j in range(i + 1, min(i + 3, len(transcript.turns))):
-                        if transcript.turns[j].speaker == Speaker.AGENT:
-                            agent_text = transcript.turns[j].text.lower()
-                            if (
-                                "transfer" in agent_text
-                                or "connect" in agent_text
-                                or "apologize" in agent_text
-                                or "sorry" in agent_text
-                            ):
-                                escalated = True
-                                break
-                    if not escalated:
-                        failures.append(
-                            DetectedFailure(
-                                pattern=FailurePattern.CALLER_FRUSTRATION,
-                                severity="critical",
-                                evidence=(
-                                    f"Caller frustration"
-                                    f" ('{keyword}') at turn"
-                                    f" {i} not addressed"
-                                ),
-                                turn_index=i,
-                                recommendation=(
-                                    "Add frustration detection"
-                                    " in guardrails and"
-                                    " auto-escalate."
-                                ),
-                            )
-                        )
+            match = _FRUSTRATION_RE.search(turn.text)
+            if not match:
+                continue
+            keyword = match.group().lower()
+            # Check if next agent turn addresses it
+            escalated = False
+            for j in range(i + 1, min(i + 3, len(transcript.turns))):
+                if transcript.turns[j].speaker == Speaker.AGENT:
+                    if _ESCALATION_RESPONSE_RE.search(transcript.turns[j].text):
+                        escalated = True
+                    break
+            if not escalated:
+                failures.append(
+                    DetectedFailure(
+                        pattern=FailurePattern.CALLER_FRUSTRATION,
+                        severity=FailureSeverity.CRITICAL,
+                        evidence=(
+                            f"Caller frustration"
+                            f" ('{keyword}') at turn"
+                            f" {i} not addressed"
+                        ),
+                        turn_index=i,
+                        recommendation=(
+                            "Add frustration detection"
+                            " in guardrails and"
+                            " auto-escalate."
+                        ),
+                    )
+                )
 
         return failures
 
@@ -258,73 +310,49 @@ class FailureDetector:
     ) -> list[DetectedFailure]:
         """Detect when the agent makes claims not grounded in tool data."""
         failures = []
-        forbidden_claims = [
-            "guarantee",
-            "warranty",
-            "award-winning",
-            "best in the city",
-            "cheapest",
-            "lowest price",
-            "fully insured",
-            "fully licensed",
-        ]
 
         for i, turn in enumerate(transcript.turns):
             if turn.speaker != Speaker.AGENT:
                 continue
-            lower = turn.text.lower()
-            for claim in forbidden_claims:
-                if claim in lower:
-                    failures.append(
-                        DetectedFailure(
-                            pattern=FailurePattern.HALLUCINATED_INFO,
-                            severity="high",
-                            evidence=(
-                                f"Agent used unverified claim"
-                                f" '{claim}' at turn {i}"
-                            ),
-                            turn_index=i,
-                            recommendation=(
-                                "Add post-LLM guardrail to"
-                                f" block '{claim}' claims."
-                            ),
-                        )
+            for match in _HALLUCINATION_RE.finditer(turn.text):
+                claim = match.group().lower()
+                failures.append(
+                    DetectedFailure(
+                        pattern=FailurePattern.HALLUCINATED_INFO,
+                        severity=FailureSeverity.HIGH,
+                        evidence=(
+                            f"Agent used unverified claim"
+                            f" '{claim}' at turn {i}"
+                        ),
+                        turn_index=i,
+                        recommendation=(
+                            "Add post-LLM guardrail to"
+                            f" block '{claim}' claims."
+                        ),
                     )
+                )
 
         return failures
 
     def _detect_missed_intent(self, transcript: ConversationTranscript) -> list[DetectedFailure]:
         """Detect when a clear caller intent is not acted upon."""
         failures = []
-        booking_signals = ["book", "appointment", "schedule", "come out", "send someone"]
-        info_signals = ["how much", "price", "cost", "what services", "do you offer"]
 
         for i, turn in enumerate(transcript.turns):
             if turn.speaker != Speaker.USER:
                 continue
-            lower = turn.text.lower()
-            has_booking_intent = any(s in lower for s in booking_signals)
-            has_info_intent = any(s in lower for s in info_signals)
+            has_booking_intent = bool(_BOOKING_RE.search(turn.text))
+            has_info_intent = bool(_INFO_RE.search(turn.text))
 
             if has_booking_intent or has_info_intent:
                 # Check if agent responds appropriately within next 2 turns
                 addressed = False
                 for j in range(i + 1, min(i + 3, len(transcript.turns))):
                     if transcript.turns[j].speaker == Speaker.AGENT:
-                        agent_lower = transcript.turns[j].text.lower()
-                        if has_booking_intent and (
-                            "book" in agent_lower
-                            or "name" in agent_lower
-                            or "appointment" in agent_lower
-                            or "schedule" in agent_lower
-                        ):
+                        agent_text = transcript.turns[j].text
+                        if has_booking_intent and _BOOKING_RESPONSE_RE.search(agent_text):
                             addressed = True
-                        if has_info_intent and (
-                            "price" in agent_lower
-                            or "service" in agent_lower
-                            or "cost" in agent_lower
-                            or "offer" in agent_lower
-                        ):
+                        if has_info_intent and _INFO_RESPONSE_RE.search(agent_text):
                             addressed = True
                         break
 
@@ -333,7 +361,7 @@ class FailureDetector:
                     failures.append(
                         DetectedFailure(
                             pattern=FailurePattern.MISSED_INTENT,
-                            severity="high",
+                            severity=FailureSeverity.HIGH,
                             evidence=(
                                 f"Caller expressed {intent}"
                                 f" intent at turn {i} but"
@@ -358,16 +386,16 @@ class FailureDetector:
         slots = transcript.slots_collected or {}
         filled_count = sum(1 for v in slots.values() if v)
 
-        if filled_count >= 4 and transcript.outcome not in (
+        if filled_count >= INCOMPLETE_BOOKING_MIN_SLOTS and transcript.outcome not in (
             CallOutcome.BOOKING_MADE,
             CallOutcome.ESCALATED,
         ):
             failures.append(
                 DetectedFailure(
                     pattern=FailurePattern.INCOMPLETE_BOOKING,
-                    severity="high",
+                    severity=FailureSeverity.HIGH,
                     evidence=(
-                        f"Booking had {filled_count}/6 slots"
+                        f"Booking had {filled_count}/{TOTAL_REQUIRED_SLOTS} slots"
                         " filled but ended as"
                         f" {transcript.outcome.value}"
                     ),
@@ -394,11 +422,7 @@ class FailureDetector:
         user_requested = False
         for turn in transcript.turns:
             if turn.speaker == Speaker.USER:
-                lower = turn.text.lower()
-                if any(
-                    kw in lower
-                    for kw in ["manager", "supervisor", "human", "real person", "speak to"]
-                ):
+                if _USER_ESCALATION_RE.search(turn.text):
                     user_requested = True
                     break
 
@@ -406,7 +430,7 @@ class FailureDetector:
             failures.append(
                 DetectedFailure(
                     pattern=FailurePattern.UNNECESSARY_ESCALATION,
-                    severity="medium",
+                    severity=FailureSeverity.MEDIUM,
                     evidence=(
                         "Call escalated with only"
                         f" {transcript.error_count} errors"
@@ -434,7 +458,7 @@ class FailureDetector:
                     failures.append(
                         DetectedFailure(
                             pattern=FailurePattern.SLOW_RESPONSE,
-                            severity="low",
+                            severity=FailureSeverity.LOW,
                             evidence=(
                                 f"Response at turn {i} took"
                                 f" {response_sec:.1f}s"

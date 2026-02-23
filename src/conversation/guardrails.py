@@ -10,14 +10,23 @@ Four independent guardrail layers, each checking a different concern:
 These are composed into a GuardrailPipeline for pre-LLM and post-LLM checks.
 """
 
-import logging
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
 
 from src.config import settings
+from src.logging_context import get_call_logger
 from src.tools.services import get_valid_service_terms
 
-logger = logging.getLogger(__name__)
+logger = get_call_logger(__name__)
+
+
+class Severity(str, Enum):
+    """Guardrail violation severity levels."""
+
+    WARNING = "warning"
+    BLOCK = "block"
+    ESCALATE = "escalate"
 
 
 @dataclass
@@ -27,7 +36,7 @@ class GuardrailResult:
     passed: bool
     violation_type: Optional[str] = None
     message: Optional[str] = None
-    severity: str = "warning"  # "warning" | "block" | "escalate"
+    severity: Severity = Severity.WARNING
 
 
 class ScopeGuardrail:
@@ -54,7 +63,7 @@ class ScopeGuardrail:
             passed=False,
             violation_type="out_of_scope_service",
             message=f"'{service}' is not in our service catalog.",
-            severity="warning",
+            severity=Severity.WARNING,
         )
 
     def check_topic_scope(self, text: str) -> GuardrailResult:
@@ -65,7 +74,7 @@ class ScopeGuardrail:
                     passed=False,
                     violation_type="out_of_scope_topic",
                     message=f"Topic '{topic}' is outside our scope.",
-                    severity="block",
+                    severity=Severity.BLOCK,
                 )
         return GuardrailResult(passed=True)
 
@@ -95,7 +104,7 @@ class HallucinationGuardrail:
                     passed=False,
                     violation_type="potential_hallucination",
                     message=f"Response contains unverified claim: '{claim}'.",
-                    severity="block",
+                    severity=Severity.BLOCK,
                 )
         return GuardrailResult(passed=True)
 
@@ -124,7 +133,7 @@ class PersonaGuardrail:
                     passed=False,
                     violation_type="persona_break",
                     message=f"Response breaks persona with: '{pattern}'.",
-                    severity="warning",
+                    severity=Severity.WARNING,
                 )
         return GuardrailResult(passed=True)
 
@@ -135,7 +144,7 @@ class PersonaGuardrail:
                     passed=False,
                     violation_type="formatting_violation",
                     message=f"Voice response should not contain '{fmt}' formatting.",
-                    severity="warning",
+                    severity=Severity.WARNING,
                 )
         return GuardrailResult(passed=True)
 
@@ -181,7 +190,7 @@ class EscalationGuardrail:
                     passed=False,
                     violation_type="emergency",
                     message=f"Emergency detected: '{keyword}'.",
-                    severity="escalate",
+                    severity=Severity.ESCALATE,
                 )
 
         for keyword in self.FRUSTRATION_KEYWORDS:
@@ -191,7 +200,7 @@ class EscalationGuardrail:
                     passed=False,
                     violation_type="caller_frustration",
                     message=f"Caller frustration detected: '{keyword}'.",
-                    severity="escalate",
+                    severity=Severity.ESCALATE,
                 )
 
         threshold = settings.guardrails.confusion_threshold
@@ -200,7 +209,7 @@ class EscalationGuardrail:
                 passed=False,
                 violation_type="repeated_confusion",
                 message=f"Error count ({error_count}) exceeds threshold ({threshold}).",
-                severity="escalate",
+                severity=Severity.ESCALATE,
             )
 
         return GuardrailResult(passed=True)

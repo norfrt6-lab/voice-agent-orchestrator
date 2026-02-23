@@ -5,14 +5,45 @@ In production, this would integrate with a CRM / scheduling platform
 (ServiceTitan, Jobber, Housecall Pro, or a custom backend).
 """
 
-import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, TypedDict
 
-logger = logging.getLogger(__name__)
+from src.logging_context import get_call_logger
 
-_bookings: dict[str, dict] = {}
+logger = get_call_logger(__name__)
+
+
+class BookingRecord(TypedDict):
+    """Full booking record stored in the system."""
+
+    booking_ref: str
+    customer_name: str
+    customer_phone: str
+    service_type: str
+    date: str
+    time: str
+    address: str
+    job_description: str
+    technician: str
+    status: str
+    created_at: str
+
+
+class _BookingResultRequired(TypedDict):
+    """Required fields always present in booking results."""
+
+    success: bool
+    message: str
+
+
+class BookingResult(_BookingResultRequired, total=False):
+    """Result from create_booking, cancel_booking, or reschedule_booking."""
+
+    booking_ref: str
+    details: BookingRecord
+
+_bookings: dict[str, BookingRecord] = {}
 
 
 def create_booking(
@@ -24,7 +55,7 @@ def create_booking(
     address: str,
     description: Optional[str] = None,
     technician: Optional[str] = None,
-) -> dict:
+) -> BookingResult:
     """Create a new booking and return the confirmation details."""
     missing = [
         field_name
@@ -46,7 +77,7 @@ def create_booking(
 
     ref = f"BK-{uuid.uuid4().hex[:6].upper()}"
 
-    booking = {
+    booking: BookingRecord = {
         "booking_ref": ref,
         "customer_name": name,
         "customer_phone": phone,
@@ -71,7 +102,7 @@ def create_booking(
     }
 
 
-def cancel_booking(booking_ref: str) -> dict:
+def cancel_booking(booking_ref: str) -> BookingResult:
     """Cancel an existing booking by reference number."""
     if booking_ref not in _bookings:
         return {"success": False, "message": f"Booking {booking_ref} not found."}
@@ -80,11 +111,13 @@ def cancel_booking(booking_ref: str) -> dict:
     return {"success": True, "message": f"Booking {booking_ref} has been cancelled."}
 
 
-def reschedule_booking(booking_ref: str, new_date: str, new_time: str) -> dict:
+def reschedule_booking(booking_ref: str, new_date: str, new_time: str) -> BookingResult:
     """Reschedule an existing booking to a new date/time."""
     if booking_ref not in _bookings:
         return {"success": False, "message": f"Booking {booking_ref} not found."}
-    _bookings[booking_ref].update(date=new_date, time=new_time, status="rescheduled")
+    _bookings[booking_ref]["date"] = new_date
+    _bookings[booking_ref]["time"] = new_time
+    _bookings[booking_ref]["status"] = "rescheduled"
     logger.info("Booking rescheduled: %s to %s %s", booking_ref, new_date, new_time)
     return {
         "success": True,
@@ -93,6 +126,11 @@ def reschedule_booking(booking_ref: str, new_date: str, new_time: str) -> dict:
     }
 
 
-def get_booking(booking_ref: str) -> Optional[dict]:
+def get_booking(booking_ref: str) -> Optional[BookingRecord]:
     """Retrieve a booking by reference number."""
     return _bookings.get(booking_ref)
+
+
+def reset() -> None:
+    """Clear all bookings. Used by test fixtures for isolation."""
+    _bookings.clear()

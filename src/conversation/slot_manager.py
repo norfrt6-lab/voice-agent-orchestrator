@@ -16,13 +16,21 @@ Usage:
 import logging
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, Optional
 
 from src.config import settings
 from src.tools.services import get_valid_service_terms
+from src.utils import normalize_phone
 
 logger = logging.getLogger(__name__)
+
+# Validation thresholds
+MIN_NAME_LENGTH = 2
+MIN_PHONE_DIGITS = 7
+MAX_PHONE_DIGITS = 15
+MIN_ADDRESS_LENGTH = 5
 
 
 class SlotStatus(str, Enum):
@@ -36,12 +44,12 @@ class SlotStatus(str, Enum):
 
 
 def _validate_name(value: str) -> bool:
-    return len(value.strip()) >= 2
+    return len(value.strip()) >= MIN_NAME_LENGTH
 
 
 def _validate_phone(value: str) -> bool:
     digits = re.sub(r"[^\d]", "", value)
-    return 7 <= len(digits) <= 15
+    return MIN_PHONE_DIGITS <= len(digits) <= MAX_PHONE_DIGITS
 
 
 def _validate_service(value: str) -> bool:
@@ -49,11 +57,29 @@ def _validate_service(value: str) -> bool:
     return any(svc in normalized or normalized in svc for svc in get_valid_service_terms())
 
 
+def _validate_date(value: str) -> bool:
+    """Validate date is in YYYY-MM-DD format."""
+    try:
+        datetime.strptime(value.strip(), "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
+
+
+def _validate_time(value: str) -> bool:
+    """Validate time is in HH:MM format."""
+    try:
+        datetime.strptime(value.strip(), "%H:%M")
+        return True
+    except ValueError:
+        return False
+
+
 def _validate_address(value: str) -> bool:
-    return len(value.strip()) >= 5
+    return len(value.strip()) >= MIN_ADDRESS_LENGTH
 
 
-@dataclass
+@dataclass(frozen=True)
 class SlotDefinition:
     """Schema for a single slot to collect."""
 
@@ -108,11 +134,13 @@ class SlotManager:
             name="preferred_date",
             display_name="preferred date",
             prompt_hint="Ask when they'd like the appointment",
+            validator=_validate_date,
         ),
         SlotDefinition(
             name="preferred_time",
             display_name="preferred time",
             prompt_hint="Ask what time works best",
+            validator=_validate_time,
         ),
         SlotDefinition(
             name="customer_address",
@@ -144,7 +172,7 @@ class SlotManager:
         """Apply slot-specific normalization rules."""
         value = value.strip()
         if name == "customer_phone":
-            return re.sub(r"[^\d+]", "", value)
+            return normalize_phone(value)
         if name == "service_type":
             return value.lower()
         if name == "customer_name":
