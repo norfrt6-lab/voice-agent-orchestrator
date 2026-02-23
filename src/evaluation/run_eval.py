@@ -73,7 +73,7 @@ def main() -> None:
         report_path.write_text(output, encoding="utf-8")
         logger.info("Report written to %s", report_path)
     else:
-        print(output)
+        sys.stdout.write(output + "\n")
 
 
 if __name__ == "__main__":
