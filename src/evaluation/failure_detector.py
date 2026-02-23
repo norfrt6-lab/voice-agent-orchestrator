@@ -45,12 +45,21 @@ class FailurePattern(str, Enum):
     SLOW_RESPONSE = "slow_response"
 
 
+class FailureSeverity(str, Enum):
+    """Severity levels for detected failures."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
 @dataclass
 class DetectedFailure:
     """A single detected failure with evidence."""
 
     pattern: FailurePattern
-    severity: str  # "low", "medium", "high", "critical"
+    severity: FailureSeverity
     evidence: str
     turn_index: Optional[int] = None
     recommendation: str = ""
@@ -162,7 +171,7 @@ class FailureDetector:
                 failures.append(
                     DetectedFailure(
                         pattern=FailurePattern.REPEATED_SLOT_FAILURE,
-                        severity="high",
+                        severity=FailureSeverity.HIGH,
                         evidence=f"Agent asked for '{slot}' {len(indices)} times (turns {indices})",
                         turn_index=indices[-1],
                         recommendation=(
@@ -190,7 +199,7 @@ class FailureDetector:
                         failures.append(
                             DetectedFailure(
                                 pattern=FailurePattern.CONFIRMATION_LOOP,
-                                severity="medium",
+                                severity=FailureSeverity.MEDIUM,
                                 evidence=(
                                     "Confirmation read-back repeated"
                                     f" {confirmation_count} times"
@@ -217,7 +226,7 @@ class FailureDetector:
             failures.append(
                 DetectedFailure(
                     pattern=FailurePattern.WRONG_AGENT_HANDOFF,
-                    severity="medium",
+                    severity=FailureSeverity.MEDIUM,
                     evidence=f"Caller passed through {len(agents_used)} agents: {agents_used}",
                     recommendation="Review intent detection to reduce unnecessary handoffs.",
                 )
@@ -239,7 +248,7 @@ class FailureDetector:
                     failures.append(
                         DetectedFailure(
                             pattern=FailurePattern.SCOPE_VIOLATION,
-                            severity="high",
+                            severity=FailureSeverity.HIGH,
                             evidence=(
                                 f"Agent response contains"
                                 f" out-of-scope topic"
@@ -279,7 +288,7 @@ class FailureDetector:
                 failures.append(
                     DetectedFailure(
                         pattern=FailurePattern.CALLER_FRUSTRATION,
-                        severity="critical",
+                        severity=FailureSeverity.CRITICAL,
                         evidence=(
                             f"Caller frustration"
                             f" ('{keyword}') at turn"
@@ -310,7 +319,7 @@ class FailureDetector:
                 failures.append(
                     DetectedFailure(
                         pattern=FailurePattern.HALLUCINATED_INFO,
-                        severity="high",
+                        severity=FailureSeverity.HIGH,
                         evidence=(
                             f"Agent used unverified claim"
                             f" '{claim}' at turn {i}"
@@ -352,7 +361,7 @@ class FailureDetector:
                     failures.append(
                         DetectedFailure(
                             pattern=FailurePattern.MISSED_INTENT,
-                            severity="high",
+                            severity=FailureSeverity.HIGH,
                             evidence=(
                                 f"Caller expressed {intent}"
                                 f" intent at turn {i} but"
@@ -384,7 +393,7 @@ class FailureDetector:
             failures.append(
                 DetectedFailure(
                     pattern=FailurePattern.INCOMPLETE_BOOKING,
-                    severity="high",
+                    severity=FailureSeverity.HIGH,
                     evidence=(
                         f"Booking had {filled_count}/{TOTAL_REQUIRED_SLOTS} slots"
                         " filled but ended as"
@@ -421,7 +430,7 @@ class FailureDetector:
             failures.append(
                 DetectedFailure(
                     pattern=FailurePattern.UNNECESSARY_ESCALATION,
-                    severity="medium",
+                    severity=FailureSeverity.MEDIUM,
                     evidence=(
                         "Call escalated with only"
                         f" {transcript.error_count} errors"
@@ -449,7 +458,7 @@ class FailureDetector:
                     failures.append(
                         DetectedFailure(
                             pattern=FailurePattern.SLOW_RESPONSE,
-                            severity="low",
+                            severity=FailureSeverity.LOW,
                             evidence=(
                                 f"Response at turn {i} took"
                                 f" {response_sec:.1f}s"

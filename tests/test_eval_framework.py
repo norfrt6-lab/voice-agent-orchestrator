@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from src.evaluation.auto_improver import AutoImprover
-from src.evaluation.failure_detector import FailureDetector, FailurePattern
+from src.evaluation.failure_detector import FailureDetector, FailurePattern, FailureSeverity
 from src.evaluation.metrics import EvalMetrics, MetricsCalculator
 from src.evaluation.transcript_analyzer import TranscriptAnalyzer
 from src.schemas.conversation_schema import (
@@ -189,7 +189,7 @@ class TestFailureDetector:
         )
         failures = self.detector.detect_all(transcript)
         # Should be minimal or no failures on a clean transcript
-        critical = [f for f in failures if f.severity == "critical"]
+        critical = [f for f in failures if f.severity == FailureSeverity.CRITICAL]
         assert len(critical) == 0
 
 
@@ -203,12 +203,12 @@ class TestAutoImprover:
         failures = [
             DetectedFailure(
                 pattern=FailurePattern.REPEATED_SLOT_FAILURE,
-                severity="high",
+                severity=FailureSeverity.HIGH,
                 evidence="Asked for name 3 times",
             ),
             DetectedFailure(
                 pattern=FailurePattern.CALLER_FRUSTRATION,
-                severity="critical",
+                severity=FailureSeverity.CRITICAL,
                 evidence="Caller said 'ridiculous'",
             ),
         ]
@@ -223,12 +223,12 @@ class TestAutoImprover:
         failures = [
             DetectedFailure(
                 pattern=FailurePattern.HALLUCINATED_INFO,
-                severity="high",
+                severity=FailureSeverity.HIGH,
                 evidence="Used 'guarantee'",
             ),
             DetectedFailure(
                 pattern=FailurePattern.HALLUCINATED_INFO,
-                severity="high",
+                severity=FailureSeverity.HIGH,
                 evidence="Used 'warranty'",
             ),
         ]
@@ -241,7 +241,7 @@ class TestAutoImprover:
         failures = [
             DetectedFailure(
                 pattern=FailurePattern.SCOPE_VIOLATION,
-                severity="high",
+                severity=FailureSeverity.HIGH,
                 evidence="Agent discussed competitor",
             ),
         ]
