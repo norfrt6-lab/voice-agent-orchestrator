@@ -34,3 +34,9 @@ Thumbs.db
 
 # Eval output
 *.report.txt
+
+# LiveKit sandbox app (generated, not part of this project)
+voice-agent/
+
+# Claude Code
+.claude/
