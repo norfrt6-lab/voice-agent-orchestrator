@@ -21,6 +21,7 @@ from typing import Any, Callable, Optional
 
 from src.config import settings
 from src.tools.services import get_valid_service_terms
+from src.utils import normalize_phone
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +145,7 @@ class SlotManager:
         """Apply slot-specific normalization rules."""
         value = value.strip()
         if name == "customer_phone":
-            return re.sub(r"[^\d+]", "", value)
+            return normalize_phone(value)
         if name == "service_type":
             return value.lower()
         if name == "customer_name":
