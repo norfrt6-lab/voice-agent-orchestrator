@@ -40,16 +40,26 @@ class BookingAgent(Agent):
         self._guardrails = GuardrailPipeline()
 
     # ------------------------------------------------------------------ #
+    # Shared slot recording logic
+    # ------------------------------------------------------------------ #
+
+    def _record_slot(
+        self, context: RunContext[SessionData], slot_name: str, value: str
+    ) -> str:
+        """Validate, store, and sync a slot value to session data."""
+        ok, msg = self._slots.set_slot(slot_name, value)
+        if ok:
+            setattr(context.userdata, slot_name, self._slots.get_slot_value(slot_name))
+        return msg + self._next_slot_hint()
+
+    # ------------------------------------------------------------------ #
     # Slot recording tools — one per field
     # ------------------------------------------------------------------ #
 
     @function_tool()
     async def record_customer_name(self, context: RunContext[SessionData], name: str) -> str:
         """Record the customer's full name."""
-        ok, msg = self._slots.set_slot("customer_name", name)
-        if ok:
-            context.userdata.customer_name = self._slots.get_slot_value("customer_name")
-        return msg + self._next_slot_hint()
+        return self._record_slot(context, "customer_name", name)
 
     @function_tool()
     async def record_phone_number(self, context: RunContext[SessionData], phone: str) -> str:
@@ -69,44 +79,29 @@ class BookingAgent(Agent):
             self._slots.set_slot("service_type", matched)
             context.userdata.service_type = matched
             return f"Got it — {matched} service." + self._next_slot_hint()
-        ok, msg = self._slots.set_slot("service_type", service)
-        if ok:
-            context.userdata.service_type = self._slots.get_slot_value("service_type")
-        return msg + self._next_slot_hint()
+        return self._record_slot(context, "service_type", service)
 
     @function_tool()
     async def record_preferred_date(self, context: RunContext[SessionData], date: str) -> str:
         """Record the customer's preferred appointment date (YYYY-MM-DD format)."""
-        ok, msg = self._slots.set_slot("preferred_date", date)
-        if ok:
-            context.userdata.preferred_date = self._slots.get_slot_value("preferred_date")
-        return msg + self._next_slot_hint()
+        return self._record_slot(context, "preferred_date", date)
 
     @function_tool()
     async def record_preferred_time(self, context: RunContext[SessionData], time: str) -> str:
         """Record the customer's preferred appointment time (HH:MM format)."""
-        ok, msg = self._slots.set_slot("preferred_time", time)
-        if ok:
-            context.userdata.preferred_time = self._slots.get_slot_value("preferred_time")
-        return msg + self._next_slot_hint()
+        return self._record_slot(context, "preferred_time", time)
 
     @function_tool()
     async def record_address(self, context: RunContext[SessionData], address: str) -> str:
         """Record the service address."""
-        ok, msg = self._slots.set_slot("customer_address", address)
-        if ok:
-            context.userdata.customer_address = self._slots.get_slot_value("customer_address")
-        return msg + self._next_slot_hint()
+        return self._record_slot(context, "customer_address", address)
 
     @function_tool()
     async def record_job_description(
         self, context: RunContext[SessionData], description: str
     ) -> str:
         """Record a brief description of the issue or job needed."""
-        ok, msg = self._slots.set_slot("job_description", description)
-        if ok:
-            context.userdata.job_description = self._slots.get_slot_value("job_description")
-        return msg + self._next_slot_hint()
+        return self._record_slot(context, "job_description", description)
 
     # ------------------------------------------------------------------ #
     # Correction tool
