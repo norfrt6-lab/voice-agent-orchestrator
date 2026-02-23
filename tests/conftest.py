@@ -1,18 +1,19 @@
 """Shared test fixtures and helpers."""
 
-import pytest
 from datetime import datetime
 from typing import Optional
 
-from src.schemas.conversation_schema import (
-    ConversationTranscript,
-    TranscriptTurn,
-    Speaker,
-    CallOutcome,
-)
-from src.conversation.state_machine import ConversationStateMachine
-from src.conversation.slot_manager import SlotManager
+import pytest
+
 from src.conversation.guardrails import GuardrailPipeline
+from src.conversation.slot_manager import SlotManager
+from src.conversation.state_machine import ConversationStateMachine
+from src.schemas.conversation_schema import (
+    CallOutcome,
+    ConversationTranscript,
+    Speaker,
+    TranscriptTurn,
+)
 
 
 @pytest.fixture

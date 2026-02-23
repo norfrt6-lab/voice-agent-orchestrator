@@ -1,9 +1,10 @@
 """Conversation transcript schemas for evaluation and analysis."""
 
-from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Any, Optional
 from enum import Enum
+from typing import Any, Optional
+
+from pydantic import BaseModel, Field
 
 
 class Speaker(str, Enum):
@@ -23,6 +24,7 @@ class CallOutcome(str, Enum):
 
 class TranscriptTurn(BaseModel):
     """A single turn in a conversation transcript."""
+
     speaker: Speaker
     text: str
     timestamp: float
@@ -34,6 +36,7 @@ class TranscriptTurn(BaseModel):
 
 class ConversationTranscript(BaseModel):
     """Complete conversation record for evaluation."""
+
     call_id: str
     timestamp: datetime
     duration_seconds: float

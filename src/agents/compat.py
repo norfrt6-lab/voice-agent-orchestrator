@@ -8,14 +8,14 @@ voice pipeline.
 """
 
 import logging
-from typing import Any, TypeVar, Generic
+from typing import Any, Generic, TypeVar
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
 try:
-    from livekit.agents import Agent, function_tool, RunContext  # type: ignore[import-untyped]
+    from livekit.agents import Agent, RunContext, function_tool  # type: ignore[import-untyped]
 
     LIVEKIT_AVAILABLE = True
     logger.debug("LiveKit agents SDK available")
@@ -37,6 +37,8 @@ except ImportError:
 
     def function_tool(**kwargs: Any) -> Any:  # type: ignore[no-redef]
         """Stub decorator that preserves the method as-is."""
+
         def decorator(func: Any) -> Any:
             return func
+
         return decorator

@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class GuardrailResult:
     """Outcome of a single guardrail check."""
+
     passed: bool
     violation_type: Optional[str] = None
     message: Optional[str] = None
@@ -33,9 +34,15 @@ class ScopeGuardrail:
     """Validates that conversations stay within defined service boundaries."""
 
     OUT_OF_SCOPE_TOPICS = [
-        "medical advice", "legal advice", "financial advice",
-        "competitor", "political", "religious",
-        "investment", "cryptocurrency", "dating",
+        "medical advice",
+        "legal advice",
+        "financial advice",
+        "competitor",
+        "political",
+        "religious",
+        "investment",
+        "cryptocurrency",
+        "dating",
     ]
 
     def check_service_scope(self, service: str) -> GuardrailResult:
@@ -67,10 +74,16 @@ class HallucinationGuardrail:
     """Detects potentially fabricated claims in agent responses."""
 
     FORBIDDEN_CLAIMS = [
-        "guarantee", "warranty", "we guarantee",
-        "years of experience", "award-winning",
-        "best in the city", "cheapest", "lowest price",
-        "fully insured", "fully licensed",
+        "guarantee",
+        "warranty",
+        "we guarantee",
+        "years of experience",
+        "award-winning",
+        "best in the city",
+        "cheapest",
+        "lowest price",
+        "fully insured",
+        "fully licensed",
     ]
 
     def check_response(self, response_text: str) -> GuardrailResult:
@@ -91,9 +104,14 @@ class PersonaGuardrail:
     """Enforces consistent voice persona and prevents formatting leaks."""
 
     FORBIDDEN_PATTERNS = [
-        "as an ai", "as a language model", "i'm just a computer",
-        "i don't have feelings", "i'm not sure if",
-        "i think maybe", "i cannot", "i'm unable to",
+        "as an ai",
+        "as a language model",
+        "i'm just a computer",
+        "i don't have feelings",
+        "i'm not sure if",
+        "i think maybe",
+        "i cannot",
+        "i'm unable to",
     ]
 
     FORMATTING_VIOLATIONS = ["- ", "* ", "1. ", "## ", "**", "```"]
@@ -126,21 +144,34 @@ class EscalationGuardrail:
     """Detects conditions requiring immediate escalation to a human."""
 
     EMERGENCY_KEYWORDS = [
-        "gas leak", "flooding", "flood", "fire", "sparking",
-        "electrocution", "burst pipe", "no hot water emergency",
-        "carbon monoxide", "smell gas", "water everywhere",
+        "gas leak",
+        "flooding",
+        "flood",
+        "fire",
+        "sparking",
+        "electrocution",
+        "burst pipe",
+        "no hot water emergency",
+        "carbon monoxide",
+        "smell gas",
+        "water everywhere",
     ]
 
     FRUSTRATION_KEYWORDS = [
-        "manager", "supervisor", "speak to a person",
-        "real person", "human", "unacceptable",
-        "lawsuit", "ridiculous", "useless",
-        "worst service", "i already told you",
+        "manager",
+        "supervisor",
+        "speak to a person",
+        "real person",
+        "human",
+        "unacceptable",
+        "lawsuit",
+        "ridiculous",
+        "useless",
+        "worst service",
+        "i already told you",
     ]
 
-    def check_escalation_needed(
-        self, user_message: str, error_count: int = 0
-    ) -> GuardrailResult:
+    def check_escalation_needed(self, user_message: str, error_count: int = 0) -> GuardrailResult:
         lower = user_message.lower()
 
         for keyword in self.EMERGENCY_KEYWORDS:
@@ -184,9 +215,7 @@ class GuardrailPipeline:
         self.persona = PersonaGuardrail()
         self.escalation = EscalationGuardrail()
 
-    def check_user_input(
-        self, text: str, error_count: int = 0
-    ) -> list[GuardrailResult]:
+    def check_user_input(self, text: str, error_count: int = 0) -> list[GuardrailResult]:
         """Pre-LLM: check user input for escalation triggers and scope violations."""
         results = [
             self.escalation.check_escalation_needed(text, error_count),

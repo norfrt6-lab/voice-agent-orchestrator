@@ -1,12 +1,14 @@
 """Customer data models and per-session state."""
 
-from pydantic import BaseModel
-from typing import Optional
 from dataclasses import dataclass, field
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class Customer(BaseModel):
     """Customer record from CRM."""
+
     name: str
     phone: str
     email: Optional[str] = None
@@ -23,6 +25,7 @@ class SessionData:
     Persists on `session.userdata` throughout the conversation lifecycle.
     Every agent reads and writes to this instead of parsing chat history.
     """
+
     customer_name: Optional[str] = None
     customer_phone: Optional[str] = None
     customer_address: Optional[str] = None

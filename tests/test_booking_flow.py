@@ -1,19 +1,16 @@
 """Integration tests: state machine + slot manager + guardrails together."""
 
-import pytest
-
-from src.conversation.state_machine import (
-    ConversationStateMachine,
-    ConversationState,
-    TransitionTrigger,
-    InvalidTransitionError,
-)
-from src.conversation.slot_manager import SlotManager, SlotStatus
 from src.conversation.guardrails import GuardrailPipeline
-from src.tools.services import match_service, get_service_details
+from src.conversation.slot_manager import SlotManager
+from src.conversation.state_machine import (
+    ConversationState,
+    ConversationStateMachine,
+    TransitionTrigger,
+)
 from src.tools.availability import check_availability, get_available_dates
-from src.tools.booking import create_booking, cancel_booking, reschedule_booking, get_booking
-from src.tools.customer import lookup_customer, create_customer
+from src.tools.booking import cancel_booking, create_booking, get_booking, reschedule_booking
+from src.tools.customer import create_customer, lookup_customer
+from src.tools.services import get_service_details, match_service
 
 
 class TestFullBookingFlow:

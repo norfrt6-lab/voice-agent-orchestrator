@@ -7,14 +7,13 @@ suggestions into a unified analysis report.
 
 import json
 import logging
-from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Optional
+from pathlib import Path
 
-from src.schemas.conversation_schema import ConversationTranscript
-from src.evaluation.metrics import MetricsCalculator, EvalMetrics
-from src.evaluation.failure_detector import FailureDetector, DetectedFailure
 from src.evaluation.auto_improver import AutoImprover, PromptSuggestion
+from src.evaluation.failure_detector import DetectedFailure, FailureDetector
+from src.evaluation.metrics import EvalMetrics, MetricsCalculator
+from src.schemas.conversation_schema import ConversationTranscript
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +21,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class TranscriptAnalysis:
     """Complete analysis of a single transcript."""
+
     call_id: str
     metrics: EvalMetrics
     failures: list[DetectedFailure]
@@ -31,6 +31,7 @@ class TranscriptAnalysis:
 @dataclass
 class BatchReport:
     """Aggregated report across multiple transcripts."""
+
     total_calls: int
     analyses: list[TranscriptAnalysis]
     aggregate_metrics: EvalMetrics
@@ -133,9 +134,7 @@ class TranscriptAnalyzer:
 
         if report.failure_summary:
             lines.append("FAILURE PATTERN SUMMARY:")
-            for pattern, count in sorted(
-                report.failure_summary.items(), key=lambda x: -x[1]
-            ):
+            for pattern, count in sorted(report.failure_summary.items(), key=lambda x: -x[1]):
                 lines.append(f"  {pattern}: {count} occurrence(s)")
             lines.append("")
 

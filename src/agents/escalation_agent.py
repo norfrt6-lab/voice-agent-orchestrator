@@ -7,13 +7,11 @@ handoff documentation.
 """
 
 import logging
-from typing import Optional
 
-from src.agents.compat import Agent, function_tool, RunContext
-
-from src.schemas.customer_schema import SessionData
-from src.prompts.system_prompts import ESCALATION_SYSTEM_PROMPT
+from src.agents.compat import Agent, RunContext, function_tool
 from src.config import settings
+from src.prompts.system_prompts import ESCALATION_SYSTEM_PROMPT
+from src.schemas.customer_schema import SessionData
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +26,7 @@ class EscalationAgent(Agent):
         self._reason = reason
 
     @function_tool()
-    async def complete_handoff(
-        self, context: RunContext[SessionData]
-    ) -> str:
+    async def complete_handoff(self, context: RunContext[SessionData]) -> str:
         """Complete the escalation handoff and provide the caller with next steps."""
         biz = settings.business
 
@@ -49,9 +45,7 @@ class EscalationAgent(Agent):
         )
 
     @function_tool()
-    async def record_callback_number(
-        self, context: RunContext[SessionData], phone: str
-    ) -> str:
+    async def record_callback_number(self, context: RunContext[SessionData], phone: str) -> str:
         """Record or confirm the best number for a callback."""
         context.userdata.customer_phone = phone
         logger.info("Callback number recorded: %s", phone)
@@ -83,8 +77,10 @@ class EscalationAgent(Agent):
 
         if "electric" in situation_lower or "spark" in situation_lower:
             return (
-                "Don't touch anything electrical, and switch off your mains power at the "
-                f"switchboard if safe to do so. Call our emergency line at {settings.business.emergency_line} "
+                "Don't touch anything electrical, and switch off your "
+                "mains power at the switchboard if safe to do so. "
+                "Call our emergency line at "
+                f"{settings.business.emergency_line} "
                 "and if anyone is injured, call 000 immediately."
             )
 

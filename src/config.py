@@ -5,8 +5,8 @@ All business-specific values, thresholds, and model settings are
 configurable here. Nothing is hardcoded in agent or tool logic.
 """
 
-import os
 import logging
+import os
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class BusinessConfig:
     """Business-specific settings loaded from environment or defaults."""
+
     name: str = os.getenv("BUSINESS_NAME", "Reliable Home Services")
     hours_weekday: str = os.getenv("BUSINESS_HOURS_WEEKDAY", "Monday to Friday 8am to 6pm")
     hours_weekend: str = os.getenv("BUSINESS_HOURS_WEEKEND", "Saturday 9am to 2pm, closed Sunday")
@@ -27,6 +28,7 @@ class BusinessConfig:
 @dataclass(frozen=True)
 class ModelConfig:
     """LLM and voice pipeline model settings."""
+
     llm_model: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
     llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.3"))
     stt_model: str = os.getenv("STT_MODEL", "nova-3")
@@ -38,6 +40,7 @@ class ModelConfig:
 @dataclass(frozen=True)
 class GuardrailConfig:
     """Thresholds for escalation and guardrail triggers."""
+
     confusion_threshold: int = int(os.getenv("CONFUSION_THRESHOLD", "3"))
     max_slot_retries: int = int(os.getenv("MAX_SLOT_RETRIES", "3"))
     max_confirmation_attempts: int = int(os.getenv("MAX_CONFIRMATION_ATTEMPTS", "2"))
@@ -47,6 +50,7 @@ class GuardrailConfig:
 @dataclass(frozen=True)
 class EvalConfig:
     """Evaluation framework thresholds and targets."""
+
     target_success_rate: float = float(os.getenv("TARGET_SUCCESS_RATE", "0.70"))
     target_containment_rate: float = float(os.getenv("TARGET_CONTAINMENT_RATE", "0.85"))
     target_escalation_rate: float = float(os.getenv("TARGET_ESCALATION_RATE", "0.15"))
@@ -57,6 +61,7 @@ class EvalConfig:
 @dataclass(frozen=True)
 class AppConfig:
     """Root configuration aggregating all sub-configs."""
+
     business: BusinessConfig = field(default_factory=BusinessConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
     guardrails: GuardrailConfig = field(default_factory=GuardrailConfig)

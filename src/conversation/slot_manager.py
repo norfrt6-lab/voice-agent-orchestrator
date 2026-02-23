@@ -13,11 +13,11 @@ Usage:
         manager.confirm_all()
 """
 
-import re
 import logging
-from enum import Enum
+import re
 from dataclasses import dataclass, field
-from typing import Optional, Callable, Any
+from enum import Enum
+from typing import Any, Callable, Optional
 
 from src.config import settings
 from src.tools.services import get_valid_service_terms
@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 class SlotStatus(str, Enum):
     """Lifecycle status of a slot value."""
+
     EMPTY = "empty"
     COLLECTED = "collected"
     VALIDATED = "validated"
@@ -39,7 +40,7 @@ def _validate_name(value: str) -> bool:
 
 
 def _validate_phone(value: str) -> bool:
-    digits = re.sub(r'[^\d]', '', value)
+    digits = re.sub(r"[^\d]", "", value)
     return 7 <= len(digits) <= 15
 
 
@@ -55,6 +56,7 @@ def _validate_address(value: str) -> bool:
 @dataclass
 class SlotDefinition:
     """Schema for a single slot to collect."""
+
     name: str
     display_name: str
     required: bool = True
@@ -67,6 +69,7 @@ class SlotDefinition:
 @dataclass
 class SlotValue:
     """Current state and history of a collected slot."""
+
     raw_value: Optional[str] = None
     normalized_value: Optional[str] = None
     status: SlotStatus = SlotStatus.EMPTY
@@ -84,35 +87,42 @@ class SlotManager:
 
     SLOT_DEFINITIONS: list[SlotDefinition] = [
         SlotDefinition(
-            name="customer_name", display_name="name",
+            name="customer_name",
+            display_name="name",
             prompt_hint="Ask for their full name",
             validator=_validate_name,
         ),
         SlotDefinition(
-            name="customer_phone", display_name="phone number",
+            name="customer_phone",
+            display_name="phone number",
             prompt_hint="Ask for a callback number",
             validator=_validate_phone,
         ),
         SlotDefinition(
-            name="service_type", display_name="type of service",
+            name="service_type",
+            display_name="type of service",
             prompt_hint="Ask what service they need",
             validator=_validate_service,
         ),
         SlotDefinition(
-            name="preferred_date", display_name="preferred date",
+            name="preferred_date",
+            display_name="preferred date",
             prompt_hint="Ask when they'd like the appointment",
         ),
         SlotDefinition(
-            name="preferred_time", display_name="preferred time",
+            name="preferred_time",
+            display_name="preferred time",
             prompt_hint="Ask what time works best",
         ),
         SlotDefinition(
-            name="customer_address", display_name="service address",
+            name="customer_address",
+            display_name="service address",
             prompt_hint="Ask for the address where the service is needed",
             validator=_validate_address,
         ),
         SlotDefinition(
-            name="job_description", display_name="job description",
+            name="job_description",
+            display_name="job description",
             required=False,
             prompt_hint="Ask them to briefly describe the issue",
             confirmation_required=False,
@@ -134,7 +144,7 @@ class SlotManager:
         """Apply slot-specific normalization rules."""
         value = value.strip()
         if name == "customer_phone":
-            return re.sub(r'[^\d+]', '', value)
+            return re.sub(r"[^\d+]", "", value)
         if name == "service_type":
             return value.lower()
         if name == "customer_name":
@@ -198,23 +208,22 @@ class SlotManager:
     def get_missing_slots(self) -> list[SlotDefinition]:
         """Get all required slots still unfilled."""
         return [
-            defn for defn in self.SLOT_DEFINITIONS
+            defn
+            for defn in self.SLOT_DEFINITIONS
             if defn.required and self.slots[defn.name].status == SlotStatus.EMPTY
         ]
 
     def all_required_filled(self) -> bool:
         """Check if all required slots have at least been validated."""
         filled = {SlotStatus.VALIDATED, SlotStatus.CONFIRMED, SlotStatus.CORRECTED}
-        return all(
-            self.slots[d.name].status in filled
-            for d in self.SLOT_DEFINITIONS if d.required
-        )
+        return all(self.slots[d.name].status in filled for d in self.SLOT_DEFINITIONS if d.required)
 
     def all_confirmed(self) -> bool:
         """Check if all required slots passed the confirmation gate."""
         return all(
             self.slots[d.name].status == SlotStatus.CONFIRMED
-            for d in self.SLOT_DEFINITIONS if d.required
+            for d in self.SLOT_DEFINITIONS
+            if d.required
         )
 
     def has_exceeded_retries(self, name: str) -> bool:
@@ -239,7 +248,8 @@ class SlotManager:
         total_attempts = sum(s.attempts for s in self.slots.values())
         corrections = sum(len(s.correction_history) for s in self.slots.values())
         filled = sum(
-            1 for d in self.SLOT_DEFINITIONS
+            1
+            for d in self.SLOT_DEFINITIONS
             if d.required and self.slots[d.name].status != SlotStatus.EMPTY
         )
         required = sum(1 for d in self.SLOT_DEFINITIONS if d.required)

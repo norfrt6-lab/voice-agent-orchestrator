@@ -47,8 +47,12 @@ def create_customer(
     """Create a new customer record."""
     cleaned = phone.replace(" ", "").replace("-", "")
     customer = {
-        "name": name, "phone": cleaned, "email": email or "",
-        "address": address or "", "previous_bookings": 0, "notes": "",
+        "name": name,
+        "phone": cleaned,
+        "email": email or "",
+        "address": address or "",
+        "previous_bookings": 0,
+        "notes": "",
     }
     _customers[cleaned] = customer
     logger.info("New customer created: %s (%s)", name, cleaned)

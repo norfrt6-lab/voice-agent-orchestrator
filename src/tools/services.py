@@ -8,7 +8,10 @@ logger = logging.getLogger(__name__)
 SERVICE_CATALOG: dict[str, dict] = {
     "plumbing": {
         "name": "Plumbing Service",
-        "description": "All plumbing repairs, installations, and maintenance including taps, toilets, pipes, and hot water systems.",
+        "description": (
+            "All plumbing repairs, installations, and maintenance"
+            " including taps, toilets, pipes, and hot water systems."
+        ),
         "price_range": "$120 - $350",
         "call_out_fee": "$89",
         "typical_duration": "1-3 hours",
@@ -16,7 +19,10 @@ SERVICE_CATALOG: dict[str, dict] = {
     },
     "electrical": {
         "name": "Electrical Service",
-        "description": "Electrical repairs, installations, safety inspections, switchboard upgrades, and lighting.",
+        "description": (
+            "Electrical repairs, installations, safety"
+            " inspections, switchboard upgrades, and lighting."
+        ),
         "price_range": "$150 - $400",
         "call_out_fee": "$99",
         "typical_duration": "1-4 hours",
@@ -24,7 +30,10 @@ SERVICE_CATALOG: dict[str, dict] = {
     },
     "hvac": {
         "name": "HVAC Service",
-        "description": "Heating, ventilation, and air conditioning installation, repair, and maintenance.",
+        "description": (
+            "Heating, ventilation, and air conditioning"
+            " installation, repair, and maintenance."
+        ),
         "price_range": "$150 - $500",
         "call_out_fee": "$99",
         "typical_duration": "1-4 hours",
@@ -48,7 +57,10 @@ SERVICE_CATALOG: dict[str, dict] = {
     },
     "emergency repair": {
         "name": "Emergency Repair",
-        "description": "24/7 emergency service for burst pipes, gas leaks, electrical faults, and flooding.",
+        "description": (
+            "24/7 emergency service for burst pipes, gas leaks,"
+            " electrical faults, and flooding."
+        ),
         "price_range": "$250 - $600",
         "call_out_fee": "$149",
         "typical_duration": "1-4 hours",
@@ -57,16 +69,31 @@ SERVICE_CATALOG: dict[str, dict] = {
 }
 
 SERVICE_ALIASES: dict[str, str] = {
-    "plumber": "plumbing", "pipes": "plumbing", "toilet": "plumbing",
-    "tap": "plumbing", "hot water": "plumbing", "water heater": "plumbing",
-    "electrician": "electrical", "wiring": "electrical", "power": "electrical",
-    "lights": "electrical", "switchboard": "electrical",
-    "heating": "hvac", "cooling": "hvac", "air conditioning": "hvac",
-    "aircon": "hvac", "ac": "hvac",
-    "handyman": "general handyman", "painting": "general handyman",
-    "drain": "drain cleaning", "blocked drain": "drain cleaning", "clogged": "drain cleaning",
-    "emergency": "emergency repair", "urgent": "emergency repair",
-    "burst pipe": "emergency repair", "gas leak": "emergency repair",
+    "plumber": "plumbing",
+    "pipes": "plumbing",
+    "toilet": "plumbing",
+    "tap": "plumbing",
+    "hot water": "plumbing",
+    "water heater": "plumbing",
+    "electrician": "electrical",
+    "wiring": "electrical",
+    "power": "electrical",
+    "lights": "electrical",
+    "switchboard": "electrical",
+    "heating": "hvac",
+    "cooling": "hvac",
+    "air conditioning": "hvac",
+    "aircon": "hvac",
+    "ac": "hvac",
+    "handyman": "general handyman",
+    "painting": "general handyman",
+    "drain": "drain cleaning",
+    "blocked drain": "drain cleaning",
+    "clogged": "drain cleaning",
+    "emergency": "emergency repair",
+    "urgent": "emergency repair",
+    "burst pipe": "emergency repair",
+    "gas leak": "emergency repair",
     "flooding": "emergency repair",
 }
 

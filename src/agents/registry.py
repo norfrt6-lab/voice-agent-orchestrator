@@ -10,7 +10,7 @@ need to hand off to each other without tightly coupling their modules.
 """
 
 import logging
-from typing import Any, Callable, Type
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +31,7 @@ def create_agent(name: str, **kwargs: Any) -> Any:
     """
     if name not in _AGENT_REGISTRY:
         registered = list(_AGENT_REGISTRY.keys())
-        raise KeyError(
-            f"Agent '{name}' not registered. Available: {registered}"
-        )
+        raise KeyError(f"Agent '{name}' not registered. Available: {registered}")
     return _AGENT_REGISTRY[name](**kwargs)
 
 
@@ -44,10 +42,10 @@ def get_registered_agents() -> list[str]:
 
 def _auto_register() -> None:
     """Auto-register all built-in agents. Called once at import time."""
-    from src.agents.intake_agent import IntakeAgent
     from src.agents.booking_agent import BookingAgent
-    from src.agents.info_agent import InfoAgent
     from src.agents.escalation_agent import EscalationAgent
+    from src.agents.info_agent import InfoAgent
+    from src.agents.intake_agent import IntakeAgent
 
     register_agent("intake", IntakeAgent)
     register_agent("booking", BookingAgent)

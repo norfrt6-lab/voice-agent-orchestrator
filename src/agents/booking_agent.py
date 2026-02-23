@@ -9,22 +9,19 @@ function tool so the LLM can be guided one question at a time.
 from __future__ import annotations
 
 import logging
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.agents.escalation_agent import EscalationAgent
 
-from src.agents.compat import Agent, function_tool, RunContext
-
-from src.schemas.customer_schema import SessionData
-from src.prompts.system_prompts import BOOKING_SYSTEM_PROMPT
+from src.agents.compat import Agent, RunContext, function_tool
+from src.conversation.guardrails import GuardrailPipeline
+from src.conversation.slot_manager import SlotManager
 from src.prompts.prompt_templates import (
-    build_slot_collection_prompt,
-    build_confirmation_prompt,
     build_alternative_times_prompt,
 )
-from src.conversation.slot_manager import SlotManager
-from src.conversation.guardrails import GuardrailPipeline
+from src.prompts.system_prompts import BOOKING_SYSTEM_PROMPT
+from src.schemas.customer_schema import SessionData
 from src.tools.availability import check_availability, get_available_dates
 from src.tools.booking import create_booking
 from src.tools.services import match_service
@@ -47,9 +44,7 @@ class BookingAgent(Agent):
     # ------------------------------------------------------------------ #
 
     @function_tool()
-    async def record_customer_name(
-        self, context: RunContext[SessionData], name: str
-    ) -> str:
+    async def record_customer_name(self, context: RunContext[SessionData], name: str) -> str:
         """Record the customer's full name."""
         ok, msg = self._slots.set_slot("customer_name", name)
         if ok:
@@ -57,9 +52,7 @@ class BookingAgent(Agent):
         return msg + self._next_slot_hint()
 
     @function_tool()
-    async def record_phone_number(
-        self, context: RunContext[SessionData], phone: str
-    ) -> str:
+    async def record_phone_number(self, context: RunContext[SessionData], phone: str) -> str:
         """Record the customer's phone number."""
         ok, msg = self._slots.set_slot("customer_phone", phone)
         if ok:
@@ -69,9 +62,7 @@ class BookingAgent(Agent):
         return msg + self._next_slot_hint()
 
     @function_tool()
-    async def record_service_type(
-        self, context: RunContext[SessionData], service: str
-    ) -> str:
+    async def record_service_type(self, context: RunContext[SessionData], service: str) -> str:
         """Record the type of service the customer needs."""
         matched = match_service(service)
         if matched:
@@ -84,9 +75,7 @@ class BookingAgent(Agent):
         return msg + self._next_slot_hint()
 
     @function_tool()
-    async def record_preferred_date(
-        self, context: RunContext[SessionData], date: str
-    ) -> str:
+    async def record_preferred_date(self, context: RunContext[SessionData], date: str) -> str:
         """Record the customer's preferred appointment date (YYYY-MM-DD format)."""
         ok, msg = self._slots.set_slot("preferred_date", date)
         if ok:
@@ -94,9 +83,7 @@ class BookingAgent(Agent):
         return msg + self._next_slot_hint()
 
     @function_tool()
-    async def record_preferred_time(
-        self, context: RunContext[SessionData], time: str
-    ) -> str:
+    async def record_preferred_time(self, context: RunContext[SessionData], time: str) -> str:
         """Record the customer's preferred appointment time (HH:MM format)."""
         ok, msg = self._slots.set_slot("preferred_time", time)
         if ok:
@@ -104,9 +91,7 @@ class BookingAgent(Agent):
         return msg + self._next_slot_hint()
 
     @function_tool()
-    async def record_address(
-        self, context: RunContext[SessionData], address: str
-    ) -> str:
+    async def record_address(self, context: RunContext[SessionData], address: str) -> str:
         """Record the service address."""
         ok, msg = self._slots.set_slot("customer_address", address)
         if ok:
@@ -131,11 +116,18 @@ class BookingAgent(Agent):
     async def correct_detail(
         self, context: RunContext[SessionData], field_name: str, new_value: str
     ) -> str:
-        """Correct a previously recorded detail. field_name is one of: customer_name, customer_phone, service_type, preferred_date, preferred_time, customer_address, job_description."""
+        """Correct a previously recorded detail.
+
+        field_name is one of: customer_name, customer_phone,
+        service_type, preferred_date, preferred_time,
+        customer_address, job_description.
+        """
         ok, msg = self._slots.correct_slot(field_name, new_value)
         if ok:
             setattr(context.userdata, field_name, self._slots.get_slot_value(field_name))
-            return f"Updated {field_name.replace('_', ' ')} to {self._slots.get_slot_value(field_name)}."
+            val = self._slots.get_slot_value(field_name)
+            label = field_name.replace('_', ' ')
+            return f"Updated {label} to {val}."
         return msg
 
     # ------------------------------------------------------------------ #
@@ -143,10 +135,11 @@ class BookingAgent(Agent):
     # ------------------------------------------------------------------ #
 
     @function_tool()
-    async def confirm_booking_details(
-        self, context: RunContext[SessionData]
-    ) -> str:
-        """Read back all collected details to the caller for confirmation. Call this when all required slots are filled."""
+    async def confirm_booking_details(self, context: RunContext[SessionData]) -> str:
+        """Read back all collected details for confirmation.
+
+        Call this when all required slots are filled.
+        """
         if not self._slots.all_required_filled():
             missing = self._slots.get_missing_slots()
             names = [s.display_name for s in missing]
@@ -159,10 +152,11 @@ class BookingAgent(Agent):
     # ------------------------------------------------------------------ #
 
     @function_tool()
-    async def check_and_book(
-        self, context: RunContext[SessionData]
-    ) -> str:
-        """Check availability and create the booking. Only call this AFTER the caller explicitly confirms details."""
+    async def check_and_book(self, context: RunContext[SessionData]) -> str:
+        """Check availability and create the booking.
+
+        Only call AFTER the caller explicitly confirms details.
+        """
         if not self._slots.all_required_filled():
             return "Cannot book — required information is still missing."
 
@@ -216,10 +210,12 @@ class BookingAgent(Agent):
     # ------------------------------------------------------------------ #
 
     @function_tool()
-    async def escalate_to_human(
-        self, context: RunContext[SessionData]
-    ) -> "EscalationAgent":
-        """Transfer to a human agent when the caller is frustrated or the system cannot resolve their issue."""
+    async def escalate_to_human(self, context: RunContext[SessionData]) -> "EscalationAgent":
+        """Transfer to a human agent.
+
+        Use when the caller is frustrated or the system
+        cannot resolve their issue.
+        """
         from src.agents.escalation_agent import EscalationAgent
 
         logger.info("BookingAgent escalating to human")

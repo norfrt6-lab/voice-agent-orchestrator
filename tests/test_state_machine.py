@@ -3,10 +3,9 @@
 import pytest
 
 from src.conversation.state_machine import (
-    ConversationStateMachine,
     ConversationState,
-    TransitionTrigger,
     InvalidTransitionError,
+    TransitionTrigger,
 )
 
 

@@ -12,16 +12,17 @@ Usage:
 """
 
 import logging
-from enum import Enum
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Optional, Callable
+from enum import Enum
+from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class ConversationState(str, Enum):
     """All possible states in a conversation lifecycle."""
+
     GREETING = "greeting"
     INTENT_DETECTION = "intent_detection"
     SERVICE_SELECTION = "service_selection"
@@ -38,6 +39,7 @@ class ConversationState(str, Enum):
 
 class TransitionTrigger(str, Enum):
     """Events that cause state transitions."""
+
     GREETING_DELIVERED = "greeting_delivered"
     INTENT_BOOK = "intent_book"
     INTENT_INFO = "intent_info"
@@ -66,6 +68,7 @@ class TransitionTrigger(str, Enum):
 @dataclass
 class Transition:
     """A single valid state transition."""
+
     from_state: ConversationState
     to_state: ConversationState
     trigger: TransitionTrigger
@@ -75,6 +78,7 @@ class Transition:
 @dataclass
 class StateEntry:
     """Recorded history entry for a state visit."""
+
     state: ConversationState
     entered_at: datetime
     trigger: Optional[TransitionTrigger] = None
@@ -95,74 +99,130 @@ class ConversationStateMachine:
 
     TRANSITIONS: list[Transition] = [
         # --- Greeting ---
-        Transition(ConversationState.GREETING, ConversationState.INTENT_DETECTION,
-                   TransitionTrigger.GREETING_DELIVERED),
-
+        Transition(
+            ConversationState.GREETING,
+            ConversationState.INTENT_DETECTION,
+            TransitionTrigger.GREETING_DELIVERED,
+        ),
         # --- Intent routing ---
-        Transition(ConversationState.INTENT_DETECTION, ConversationState.SERVICE_SELECTION,
-                   TransitionTrigger.INTENT_BOOK),
-        Transition(ConversationState.INTENT_DETECTION, ConversationState.INFO_RESPONSE,
-                   TransitionTrigger.INTENT_INFO),
-        Transition(ConversationState.INTENT_DETECTION, ConversationState.ESCALATION,
-                   TransitionTrigger.INTENT_EMERGENCY),
-        Transition(ConversationState.INTENT_DETECTION, ConversationState.ESCALATION,
-                   TransitionTrigger.INTENT_HUMAN),
-        Transition(ConversationState.INTENT_DETECTION, ConversationState.ERROR_RECOVERY,
-                   TransitionTrigger.INTENT_UNCLEAR),
-
+        Transition(
+            ConversationState.INTENT_DETECTION,
+            ConversationState.SERVICE_SELECTION,
+            TransitionTrigger.INTENT_BOOK,
+        ),
+        Transition(
+            ConversationState.INTENT_DETECTION,
+            ConversationState.INFO_RESPONSE,
+            TransitionTrigger.INTENT_INFO,
+        ),
+        Transition(
+            ConversationState.INTENT_DETECTION,
+            ConversationState.ESCALATION,
+            TransitionTrigger.INTENT_EMERGENCY,
+        ),
+        Transition(
+            ConversationState.INTENT_DETECTION,
+            ConversationState.ESCALATION,
+            TransitionTrigger.INTENT_HUMAN,
+        ),
+        Transition(
+            ConversationState.INTENT_DETECTION,
+            ConversationState.ERROR_RECOVERY,
+            TransitionTrigger.INTENT_UNCLEAR,
+        ),
         # --- Booking flow ---
-        Transition(ConversationState.SERVICE_SELECTION, ConversationState.SLOT_FILLING,
-                   TransitionTrigger.SERVICE_CONFIRMED),
-        Transition(ConversationState.SLOT_FILLING, ConversationState.SLOT_CONFIRMATION,
-                   TransitionTrigger.ALL_SLOTS_FILLED),
-        Transition(ConversationState.SLOT_FILLING, ConversationState.ERROR_RECOVERY,
-                   TransitionTrigger.MAX_RETRIES),
-
+        Transition(
+            ConversationState.SERVICE_SELECTION,
+            ConversationState.SLOT_FILLING,
+            TransitionTrigger.SERVICE_CONFIRMED,
+        ),
+        Transition(
+            ConversationState.SLOT_FILLING,
+            ConversationState.SLOT_CONFIRMATION,
+            TransitionTrigger.ALL_SLOTS_FILLED,
+        ),
+        Transition(
+            ConversationState.SLOT_FILLING,
+            ConversationState.ERROR_RECOVERY,
+            TransitionTrigger.MAX_RETRIES,
+        ),
         # --- Confirmation gate ---
-        Transition(ConversationState.SLOT_CONFIRMATION, ConversationState.AVAILABILITY_CHECK,
-                   TransitionTrigger.CALLER_CONFIRMED),
-        Transition(ConversationState.SLOT_CONFIRMATION, ConversationState.SLOT_FILLING,
-                   TransitionTrigger.CALLER_CORRECTED),
-
+        Transition(
+            ConversationState.SLOT_CONFIRMATION,
+            ConversationState.AVAILABILITY_CHECK,
+            TransitionTrigger.CALLER_CONFIRMED,
+        ),
+        Transition(
+            ConversationState.SLOT_CONFIRMATION,
+            ConversationState.SLOT_FILLING,
+            TransitionTrigger.CALLER_CORRECTED,
+        ),
         # --- Availability ---
-        Transition(ConversationState.AVAILABILITY_CHECK, ConversationState.BOOKING_CREATION,
-                   TransitionTrigger.TIME_SELECTED),
-        Transition(ConversationState.AVAILABILITY_CHECK, ConversationState.SLOT_FILLING,
-                   TransitionTrigger.NO_AVAILABILITY),
-        Transition(ConversationState.AVAILABILITY_CHECK, ConversationState.ESCALATION,
-                   TransitionTrigger.NO_AVAILABILITY_AT_ALL),
-
+        Transition(
+            ConversationState.AVAILABILITY_CHECK,
+            ConversationState.BOOKING_CREATION,
+            TransitionTrigger.TIME_SELECTED,
+        ),
+        Transition(
+            ConversationState.AVAILABILITY_CHECK,
+            ConversationState.SLOT_FILLING,
+            TransitionTrigger.NO_AVAILABILITY,
+        ),
+        Transition(
+            ConversationState.AVAILABILITY_CHECK,
+            ConversationState.ESCALATION,
+            TransitionTrigger.NO_AVAILABILITY_AT_ALL,
+        ),
         # --- Booking result ---
-        Transition(ConversationState.BOOKING_CREATION, ConversationState.CONFIRMATION,
-                   TransitionTrigger.BOOKING_SUCCESS),
-        Transition(ConversationState.BOOKING_CREATION, ConversationState.ERROR_RECOVERY,
-                   TransitionTrigger.BOOKING_FAILED),
-
+        Transition(
+            ConversationState.BOOKING_CREATION,
+            ConversationState.CONFIRMATION,
+            TransitionTrigger.BOOKING_SUCCESS,
+        ),
+        Transition(
+            ConversationState.BOOKING_CREATION,
+            ConversationState.ERROR_RECOVERY,
+            TransitionTrigger.BOOKING_FAILED,
+        ),
         # --- Post-booking ---
-        Transition(ConversationState.CONFIRMATION, ConversationState.FAREWELL,
-                   TransitionTrigger.GOODBYE),
-
+        Transition(
+            ConversationState.CONFIRMATION, ConversationState.FAREWELL, TransitionTrigger.GOODBYE
+        ),
         # --- Info flow ---
-        Transition(ConversationState.INFO_RESPONSE, ConversationState.INTENT_DETECTION,
-                   TransitionTrigger.FOLLOW_UP),
-        Transition(ConversationState.INFO_RESPONSE, ConversationState.SERVICE_SELECTION,
-                   TransitionTrigger.WANTS_TO_BOOK),
-        Transition(ConversationState.INFO_RESPONSE, ConversationState.FAREWELL,
-                   TransitionTrigger.SATISFIED),
-
+        Transition(
+            ConversationState.INFO_RESPONSE,
+            ConversationState.INTENT_DETECTION,
+            TransitionTrigger.FOLLOW_UP,
+        ),
+        Transition(
+            ConversationState.INFO_RESPONSE,
+            ConversationState.SERVICE_SELECTION,
+            TransitionTrigger.WANTS_TO_BOOK,
+        ),
+        Transition(
+            ConversationState.INFO_RESPONSE, ConversationState.FAREWELL, TransitionTrigger.SATISFIED
+        ),
         # --- Error recovery ---
-        Transition(ConversationState.ERROR_RECOVERY, ConversationState.SLOT_FILLING,
-                   TransitionTrigger.CORRECTION_RECEIVED),
-        Transition(ConversationState.ERROR_RECOVERY, ConversationState.ESCALATION,
-                   TransitionTrigger.RECOVERY_FAILED),
-
+        Transition(
+            ConversationState.ERROR_RECOVERY,
+            ConversationState.SLOT_FILLING,
+            TransitionTrigger.CORRECTION_RECEIVED,
+        ),
+        Transition(
+            ConversationState.ERROR_RECOVERY,
+            ConversationState.ESCALATION,
+            TransitionTrigger.RECOVERY_FAILED,
+        ),
         # --- Escalation ---
-        Transition(ConversationState.ESCALATION, ConversationState.FAREWELL,
-                   TransitionTrigger.HANDOFF_COMPLETE),
-
+        Transition(
+            ConversationState.ESCALATION,
+            ConversationState.FAREWELL,
+            TransitionTrigger.HANDOFF_COMPLETE,
+        ),
         # --- Terminal ---
-        Transition(ConversationState.FAREWELL, ConversationState.FAREWELL,
-                   TransitionTrigger.GOODBYE),
+        Transition(
+            ConversationState.FAREWELL, ConversationState.FAREWELL, TransitionTrigger.GOODBYE
+        ),
     ]
 
     def __init__(self) -> None:
@@ -201,18 +261,22 @@ class ConversationStateMachine:
                 old_state = self._current_state
                 self._current_state = t.to_state
 
-                self._history.append(StateEntry(
-                    state=self._current_state,
-                    entered_at=datetime.now(timezone.utc),
-                    trigger=trigger,
-                ))
+                self._history.append(
+                    StateEntry(
+                        state=self._current_state,
+                        entered_at=datetime.now(timezone.utc),
+                        trigger=trigger,
+                    )
+                )
 
                 if t.to_state == ConversationState.ERROR_RECOVERY:
                     self._error_count += 1
 
                 logger.debug(
                     "State transition: %s -> %s (trigger: %s)",
-                    old_state.value, self._current_state.value, trigger.value,
+                    old_state.value,
+                    self._current_state.value,
+                    trigger.value,
                 )
                 return self._current_state
 

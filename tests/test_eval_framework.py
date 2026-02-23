@@ -1,20 +1,18 @@
 """Tests for the evaluation framework: metrics, failure detection, and auto-improver."""
 
-import pytest
 from pathlib import Path
 
-from src.schemas.conversation_schema import (
-    ConversationTranscript,
-    TranscriptTurn,
-    Speaker,
-    CallOutcome,
-)
-from src.evaluation.metrics import MetricsCalculator, EvalMetrics
-from src.evaluation.failure_detector import FailureDetector, FailurePattern
-from src.evaluation.auto_improver import AutoImprover
-from src.evaluation.transcript_analyzer import TranscriptAnalyzer
+import pytest
 
-from tests.conftest import make_transcript, make_turn, make_transcript_with_turns
+from src.evaluation.auto_improver import AutoImprover
+from src.evaluation.failure_detector import FailureDetector, FailurePattern
+from src.evaluation.metrics import EvalMetrics, MetricsCalculator
+from src.evaluation.transcript_analyzer import TranscriptAnalyzer
+from src.schemas.conversation_schema import (
+    CallOutcome,
+    Speaker,
+)
+from tests.conftest import make_transcript, make_transcript_with_turns, make_turn
 
 
 class TestMetricsCalculator:
@@ -24,9 +22,14 @@ class TestMetricsCalculator:
     def test_successful_booking_metrics(self):
         transcript = make_transcript(
             outcome=CallOutcome.BOOKING_MADE,
-            slots={"customer_name": "John", "customer_phone": "0412345678",
-                   "service_type": "plumbing", "preferred_date": "2025-03-18",
-                   "preferred_time": "10:00", "customer_address": "42 Oak Ave"},
+            slots={
+                "customer_name": "John",
+                "customer_phone": "0412345678",
+                "service_type": "plumbing",
+                "preferred_date": "2025-03-18",
+                "preferred_time": "10:00",
+                "customer_address": "42 Oak Ave",
+            },
         )
         metrics = self.calc.calculate(transcript)
         assert metrics.success_rate == 1.0
@@ -128,7 +131,9 @@ class TestFailureDetector:
         ]
         transcript = make_transcript_with_turns(turns)
         failures = self.detector.detect_all(transcript)
-        frustration_failures = [f for f in failures if f.pattern == FailurePattern.CALLER_FRUSTRATION]
+        frustration_failures = [
+            f for f in failures if f.pattern == FailurePattern.CALLER_FRUSTRATION
+        ]
         assert len(frustration_failures) == 0
 
     def test_detect_hallucinated_info(self):
@@ -302,9 +307,7 @@ class TestSampleTranscriptEval:
         assert report.total_calls == 5
 
         # At least some should succeed
-        success_count = sum(
-            1 for a in report.analyses if a.metrics.success_rate > 0
-        )
+        success_count = sum(1 for a in report.analyses if a.metrics.success_rate > 0)
         assert success_count >= 2
 
         output = analyzer.format_batch_report(report)

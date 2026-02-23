@@ -14,11 +14,10 @@ if TYPE_CHECKING:
     from src.agents.booking_agent import BookingAgent
     from src.agents.escalation_agent import EscalationAgent
 
-from src.agents.compat import Agent, function_tool, RunContext
-
-from src.schemas.customer_schema import SessionData
+from src.agents.compat import Agent, RunContext, function_tool
 from src.prompts.system_prompts import INFO_SYSTEM_PROMPT
-from src.tools.services import get_service_details, get_all_services, match_service
+from src.schemas.customer_schema import SessionData
+from src.tools.services import get_all_services, get_service_details, match_service
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +31,7 @@ class InfoAgent(Agent):
         )
 
     @function_tool()
-    async def get_service_info(
-        self, context: RunContext[SessionData], service_query: str
-    ) -> str:
+    async def get_service_info(self, context: RunContext[SessionData], service_query: str) -> str:
         """Look up details about a specific service including pricing and duration."""
         matched_id = match_service(service_query)
         if matched_id:
@@ -52,18 +49,14 @@ class InfoAgent(Agent):
         )
 
     @function_tool()
-    async def list_all_services(
-        self, context: RunContext[SessionData]
-    ) -> str:
+    async def list_all_services(self, context: RunContext[SessionData]) -> str:
         """List all available services with basic pricing."""
         services = get_all_services()
         lines = [f"{s['name']} ({s['price_range']})" for s in services]
         return "We offer: " + ", ".join(lines) + ". Which service are you interested in?"
 
     @function_tool()
-    async def route_to_booking(
-        self, context: RunContext[SessionData]
-    ) -> "BookingAgent":
+    async def route_to_booking(self, context: RunContext[SessionData]) -> "BookingAgent":
         """Transfer the caller to the booking specialist to schedule an appointment."""
         from src.agents.booking_agent import BookingAgent
 
@@ -72,9 +65,7 @@ class InfoAgent(Agent):
         return BookingAgent()
 
     @function_tool()
-    async def escalate_to_human(
-        self, context: RunContext[SessionData]
-    ) -> "EscalationAgent":
+    async def escalate_to_human(self, context: RunContext[SessionData]) -> "EscalationAgent":
         """Transfer to a human agent when the question can't be answered automatically."""
         from src.agents.escalation_agent import EscalationAgent
 

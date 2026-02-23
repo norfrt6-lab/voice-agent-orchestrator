@@ -8,19 +8,18 @@ appropriate specialist agent via function tool handoffs.
 from __future__ import annotations
 
 import logging
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.agents.booking_agent import BookingAgent
-    from src.agents.info_agent import InfoAgent
     from src.agents.escalation_agent import EscalationAgent
+    from src.agents.info_agent import InfoAgent
 
-from src.agents.compat import Agent, function_tool, RunContext
-
-from src.schemas.customer_schema import SessionData
-from src.prompts.system_prompts import INTAKE_SYSTEM_PROMPT
-from src.tools.customer import lookup_customer
+from src.agents.compat import Agent, RunContext, function_tool
 from src.conversation.guardrails import GuardrailPipeline
+from src.prompts.system_prompts import INTAKE_SYSTEM_PROMPT
+from src.schemas.customer_schema import SessionData
+from src.tools.customer import lookup_customer
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +61,7 @@ class IntakeAgent(Agent):
         return EscalationAgent(reason="emergency")
 
     @function_tool()
-    async def identify_caller(
-        self, context: RunContext[SessionData], phone_number: str
-    ) -> str:
+    async def identify_caller(self, context: RunContext[SessionData], phone_number: str) -> str:
         """Look up a caller by phone number to personalize the interaction."""
         customer = lookup_customer(phone_number)
         if customer:

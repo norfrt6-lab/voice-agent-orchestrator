@@ -7,11 +7,10 @@ from a ConversationTranscript instance.
 """
 
 import logging
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
-from src.schemas.conversation_schema import ConversationTranscript, CallOutcome, Speaker
 from src.config import settings
+from src.schemas.conversation_schema import CallOutcome, ConversationTranscript
 
 logger = logging.getLogger(__name__)
 
@@ -54,34 +53,44 @@ class MetricsCalculator:
         metrics = EvalMetrics()
 
         total_turns = len(transcript.turns)
-        agent_turns = [t for t in transcript.turns if t.speaker == Speaker.AGENT]
-        user_turns = [t for t in transcript.turns if t.speaker == Speaker.USER]
 
         # Task success
         metrics.success_rate = 1.0 if transcript.outcome == CallOutcome.BOOKING_MADE else 0.0
-        metrics.first_call_resolution = 1.0 if transcript.outcome in (
-            CallOutcome.BOOKING_MADE, CallOutcome.INFO_PROVIDED
-        ) else 0.0
+        metrics.first_call_resolution = (
+            1.0
+            if transcript.outcome in (CallOutcome.BOOKING_MADE, CallOutcome.INFO_PROVIDED)
+            else 0.0
+        )
         metrics.containment_rate = 1.0 if transcript.outcome != CallOutcome.ESCALATED else 0.0
 
         # Slot quality
         slots_collected = transcript.slots_collected or {}
         required_slots = [
-            "customer_name", "customer_phone", "service_type",
-            "preferred_date", "preferred_time", "customer_address",
+            "customer_name",
+            "customer_phone",
+            "service_type",
+            "preferred_date",
+            "preferred_time",
+            "customer_address",
         ]
         total_required = len(required_slots)
         filled = sum(1 for key in required_slots if slots_collected.get(key))
         metrics.slot_fill_rate = filled / total_required
 
         corrections = transcript.metadata.get("corrections", 0) if transcript.metadata else 0
-        total_attempts = transcript.metadata.get("total_attempts", filled) if transcript.metadata else filled
+        total_attempts = (
+            transcript.metadata.get("total_attempts", filled) if transcript.metadata else filled
+        )
         metrics.slot_correction_rate = corrections / max(filled, 1)
         metrics.avg_slot_attempts = total_attempts / max(filled, 1)
-        metrics.confirmation_pass_rate = 1.0 if transcript.outcome == CallOutcome.BOOKING_MADE else 0.0
+        metrics.confirmation_pass_rate = (
+            1.0 if transcript.outcome == CallOutcome.BOOKING_MADE else 0.0
+        )
 
         # Efficiency
-        metrics.avg_turns_to_booking = float(total_turns) if transcript.outcome == CallOutcome.BOOKING_MADE else 0.0
+        metrics.avg_turns_to_booking = (
+            float(total_turns) if transcript.outcome == CallOutcome.BOOKING_MADE else 0.0
+        )
         metrics.avg_duration_seconds = transcript.duration_seconds or 0.0
 
         agents_used = transcript.agents_used or []
@@ -134,25 +143,30 @@ class MetricsCalculator:
             "=" * 60,
             "",
             "TASK SUCCESS",
-            f"  Success rate:           {metrics.success_rate:.1%}  (target: {targets.target_success_rate:.0%})",
+            f"  Success rate:           {metrics.success_rate:.1%}"
+            f"  (target: {targets.target_success_rate:.0%})",
             f"  First-call resolution:  {metrics.first_call_resolution:.1%}",
-            f"  Containment rate:       {metrics.containment_rate:.1%}  (target: {targets.target_containment_rate:.0%})",
+            f"  Containment rate:       {metrics.containment_rate:.1%}"
+            f"  (target: {targets.target_containment_rate:.0%})",
             "",
             "SLOT QUALITY",
-            f"  Fill rate:              {metrics.slot_fill_rate:.1%}  (target: {targets.target_slot_fill_rate:.0%})",
+            f"  Fill rate:              {metrics.slot_fill_rate:.1%}"
+            f"  (target: {targets.target_slot_fill_rate:.0%})",
             f"  Correction rate:        {metrics.slot_correction_rate:.1%}",
             f"  Avg attempts per slot:  {metrics.avg_slot_attempts:.1f}",
             f"  Confirmation pass rate: {metrics.confirmation_pass_rate:.1%}",
             "",
             "EFFICIENCY",
-            f"  Avg turns to booking:   {metrics.avg_turns_to_booking:.1f}  (target: <{targets.target_max_turns})",
+            f"  Avg turns to booking:   {metrics.avg_turns_to_booking:.1f}"
+            f"  (target: <{targets.target_max_turns})",
             f"  Avg duration:           {metrics.avg_duration_seconds:.0f}s",
             f"  Handoff rate:           {metrics.handoff_rate:.1%}",
             "",
             "ERRORS",
             f"  Error rate:             {metrics.error_rate:.1%}",
             f"  Recovery success rate:  {metrics.recovery_success_rate:.1%}",
-            f"  Escalation rate:        {metrics.escalation_rate:.1%}  (target: <{targets.target_escalation_rate:.0%})",
+            f"  Escalation rate:        {metrics.escalation_rate:.1%}"
+            f"  (target: <{targets.target_escalation_rate:.0%})",
             "",
             "GUARDRAILS",
             f"  Scope violation rate:   {metrics.scope_violation_rate:.1%}",

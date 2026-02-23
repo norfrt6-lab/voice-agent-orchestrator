@@ -12,22 +12,19 @@ Usage:
 """
 
 import argparse
-import sys
-from typing import Optional
 
 from src.config import settings
-from src.schemas.customer_schema import SessionData
+from src.conversation.guardrails import GuardrailPipeline
+from src.conversation.slot_manager import SlotManager
 from src.conversation.state_machine import (
-    ConversationStateMachine,
     ConversationState,
+    ConversationStateMachine,
     TransitionTrigger,
 )
-from src.conversation.slot_manager import SlotManager
-from src.conversation.guardrails import GuardrailPipeline
-from src.tools.services import match_service, get_service_details, get_all_services
+from src.schemas.customer_schema import SessionData
 from src.tools.availability import check_availability, get_available_dates
 from src.tools.booking import create_booking
-from src.tools.customer import lookup_customer
+from src.tools.services import get_all_services, get_service_details, match_service
 
 BLUE = "\033[94m"
 GREEN = "\033[92m"
@@ -97,8 +94,7 @@ class ConsoleSession:
 
         self.sm.transition(TransitionTrigger.GREETING_DELIVERED)
         self.agent_say(
-            f"Good morning, thanks for calling {settings.business.name}. "
-            f"How can I help you today?"
+            f"Good morning, thanks for calling {settings.business.name}. How can I help you today?"
         )
         self.system_log(f"State: {self.sm.current_state.value}")
 
@@ -127,8 +123,7 @@ class ConsoleSession:
         # Greeting
         self.sm.transition(TransitionTrigger.GREETING_DELIVERED)
         self.agent_say(
-            f"Good morning, thanks for calling {settings.business.name}. "
-            f"How can I help you today?"
+            f"Good morning, thanks for calling {settings.business.name}. How can I help you today?"
         )
         self.system_log(f"State: {self.sm.current_state.value}")
 
@@ -196,12 +191,38 @@ class ConsoleSession:
 
     def _handle_intent(self, text: str) -> None:
         lower = text.lower()
-        booking_signals = ["book", "appointment", "schedule", "come out", "send someone",
-                           "fix", "repair", "install", "leak", "broken", "blocked"]
-        info_signals = ["how much", "price", "cost", "what services", "do you offer",
-                        "hours", "area", "where"]
-        emergency_signals = ["gas leak", "burst pipe", "flooding", "fire", "sparking",
-                             "emergency", "urgent"]
+        booking_signals = [
+            "book",
+            "appointment",
+            "schedule",
+            "come out",
+            "send someone",
+            "fix",
+            "repair",
+            "install",
+            "leak",
+            "broken",
+            "blocked",
+        ]
+        info_signals = [
+            "how much",
+            "price",
+            "cost",
+            "what services",
+            "do you offer",
+            "hours",
+            "area",
+            "where",
+        ]
+        emergency_signals = [
+            "gas leak",
+            "burst pipe",
+            "flooding",
+            "fire",
+            "sparking",
+            "emergency",
+            "urgent",
+        ]
 
         if any(s in lower for s in emergency_signals):
             self._handle_escalation("emergency", text)
@@ -254,9 +275,7 @@ class ConsoleSession:
             self.session.service_type = matched
             self.sm.transition(TransitionTrigger.SERVICE_CONFIRMED)
             self.system_log(f"Service matched: {matched}")
-            self.agent_say(
-                f"Got it — {matched} service. Could I get your full name please?"
-            )
+            self.agent_say(f"Got it — {matched} service. Could I get your full name please?")
         else:
             services = get_all_services()
             names = [s["name"] for s in services]
@@ -345,9 +364,7 @@ class ConsoleSession:
             alt_dates = get_available_dates(service, limit=3)
             if alt_dates:
                 self.sm.transition(TransitionTrigger.NO_AVAILABILITY)
-                options = ", ".join(
-                    f"{d['date']} ({d['day_name']})" for d in alt_dates[:3]
-                )
+                options = ", ".join(f"{d['date']} ({d['day_name']})" for d in alt_dates[:3])
                 self.agent_say(
                     f"Unfortunately {date} isn't available. "
                     f"I have openings on: {options}. Which works for you?"
@@ -386,8 +403,7 @@ class ConsoleSession:
         else:
             self.sm.transition(TransitionTrigger.BOOKING_FAILED)
             self.agent_say(
-                "Something went wrong creating the booking. "
-                "Let me connect you with our team."
+                "Something went wrong creating the booking. Let me connect you with our team."
             )
 
     def _handle_availability(self, text: str) -> None:
@@ -437,8 +453,7 @@ class ConsoleSession:
             services = get_all_services()
             lines = [f"{s['name']} ({s['price_range']})" for s in services]
             self.agent_say(
-                f"We offer: {', '.join(lines)}. "
-                f"Would you like details on any of these, or to book?"
+                f"We offer: {', '.join(lines)}. Would you like details on any of these, or to book?"
             )
             return
 
@@ -447,21 +462,16 @@ class ConsoleSession:
             self.sm.transition(TransitionTrigger.WANTS_TO_BOOK)
             self.current_agent = "BookingAgent"
             self.system_log("Handoff: InfoAgent -> BookingAgent")
-            self.agent_say(
-                "I'll get you booked in. What type of service do you need?"
-            )
+            self.agent_say("I'll get you booked in. What type of service do you need?")
             return
 
         if any(w in lower for w in ["no", "that's all", "bye", "thanks"]):
             self.sm.transition(TransitionTrigger.SATISFIED)
-            self.agent_say(
-                f"Thanks for calling {settings.business.name}. Have a great day!"
-            )
+            self.agent_say(f"Thanks for calling {settings.business.name}. Have a great day!")
             return
 
         self.agent_say(
-            "I can help with pricing, service details, or booking. "
-            "What would you like to know?"
+            "I can help with pricing, service details, or booking. What would you like to know?"
         )
 
     # ------------------------------------------------------------------ #
@@ -531,9 +541,7 @@ class ConsoleSession:
         self.sm.transition(TransitionTrigger.CORRECTION_RECEIVED)
         next_slot = self.slots.get_next_empty_slot()
         self.agent_say(
-            "Let me try that again. " + (
-                next_slot.prompt_hint if next_slot else "Let's continue."
-            )
+            "Let me try that again. " + (next_slot.prompt_hint if next_slot else "Let's continue.")
         )
 
 

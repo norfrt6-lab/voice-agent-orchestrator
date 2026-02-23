@@ -1,13 +1,10 @@
 """Tests for the multi-layer guardrail system."""
 
-import pytest
-
 from src.conversation.guardrails import (
-    ScopeGuardrail,
+    EscalationGuardrail,
     HallucinationGuardrail,
     PersonaGuardrail,
-    EscalationGuardrail,
-    GuardrailPipeline,
+    ScopeGuardrail,
 )
 
 

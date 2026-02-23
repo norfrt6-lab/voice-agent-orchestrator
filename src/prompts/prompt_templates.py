@@ -3,9 +3,7 @@
 from typing import Optional
 
 
-def build_slot_collection_prompt(
-    missing_slots: list[str], collected: dict[str, str]
-) -> str:
+def build_slot_collection_prompt(missing_slots: list[str], collected: dict[str, str]) -> str:
     """Build a dynamic instruction for the next slot to collect."""
     parts: list[str] = []
     if collected:

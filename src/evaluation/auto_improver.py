@@ -8,7 +8,6 @@ and expected impact.
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 from src.config import settings
 from src.evaluation.failure_detector import DetectedFailure, FailurePattern
@@ -19,6 +18,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PromptSuggestion:
     """A specific prompt modification suggestion."""
+
     target_prompt: str  # Which agent prompt to modify
     section: str  # Section within the prompt
     current_behavior: str
@@ -75,7 +75,7 @@ class AutoImprover:
             "suggested_change": (
                 "Strengthen scope boundaries: 'If the caller asks about topics outside "
                 "home services (medical, legal, financial, etc.), politely redirect: "
-                "\"I can only help with home services. Would you like to book a service "
+                '"I can only help with home services. Would you like to book a service '
                 "or get information about what we offer?\"'"
             ),
             "expected_impact": "Eliminate scope violations",
@@ -87,7 +87,7 @@ class AutoImprover:
             "current_behavior": "Caller frustration not detected or addressed",
             "suggested_change": (
                 "Add instruction: 'If the caller expresses frustration (repeated corrections, "
-                "raised voice indicators, words like \"ridiculous\" or \"already told you\"), "
+                'raised voice indicators, words like "ridiculous" or "already told you"), '
                 "immediately acknowledge their frustration and offer to connect them with a "
                 "team member. Never continue collecting slots from a frustrated caller.'"
             ),
@@ -99,9 +99,9 @@ class AutoImprover:
             "section": "DO NOT section",
             "current_behavior": "Agent makes unverified claims",
             "suggested_change": (
-                "Add explicit forbidden claims list: 'Never use words like \"guarantee\", "
-                "\"warranty\", \"award-winning\", \"best\", \"cheapest\", \"fully insured\" "
-                "or \"fully licensed\" — only state facts available in the service catalog.'"
+                'Add explicit forbidden claims list: \'Never use words like "guarantee", '
+                '"warranty", "award-winning", "best", "cheapest", "fully insured" '
+                'or "fully licensed" — only state facts available in the service catalog.\''
             ),
             "expected_impact": "Eliminate hallucinated claims",
             "priority": "high",
@@ -111,9 +111,11 @@ class AutoImprover:
             "section": "Intent detection",
             "current_behavior": "Agent misses clear booking or info intent signals",
             "suggested_change": (
-                "Add keyword triggers: 'Detect booking intent from phrases like \"book\", "
-                "\"appointment\", \"schedule\", \"come out\", \"send someone\". Detect info "
-                "intent from \"how much\", \"price\", \"cost\", \"what services\", \"do you offer\". "
+                "Add keyword triggers: 'Detect booking intent "
+                'from phrases like "book", "appointment", '
+                '"schedule", "come out", "send someone". '
+                'Detect info intent from "how much", "price", '
+                '"cost", "what services", "do you offer". '
                 "Route immediately when detected.'"
             ),
             "expected_impact": "Improve intent detection accuracy by 20-40%",
@@ -163,9 +165,7 @@ class AutoImprover:
             "and require at least one frustration keyword before auto-escalating."
         )
 
-    def suggest_improvements(
-        self, failures: list[DetectedFailure]
-    ) -> list[PromptSuggestion]:
+    def suggest_improvements(self, failures: list[DetectedFailure]) -> list[PromptSuggestion]:
         """Generate prompt improvement suggestions from detected failures."""
         suggestions: list[PromptSuggestion] = []
         seen_patterns: set[FailurePattern] = set()
@@ -180,15 +180,17 @@ class AutoImprover:
                 change = template["suggested_change"]
                 if change is None and failure.pattern == FailurePattern.UNNECESSARY_ESCALATION:
                     change = self._build_escalation_suggestion()
-                suggestions.append(PromptSuggestion(
-                    target_prompt=template["target_prompt"],
-                    section=template["section"],
-                    current_behavior=template["current_behavior"],
-                    suggested_change=change,
-                    expected_impact=template["expected_impact"],
-                    priority=template["priority"],
-                    failure_pattern=failure.pattern,
-                ))
+                suggestions.append(
+                    PromptSuggestion(
+                        target_prompt=template["target_prompt"],
+                        section=template["section"],
+                        current_behavior=template["current_behavior"],
+                        suggested_change=change,
+                        expected_impact=template["expected_impact"],
+                        priority=template["priority"],
+                        failure_pattern=failure.pattern,
+                    )
+                )
 
         # Sort by priority
         priority_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
@@ -209,14 +211,16 @@ class AutoImprover:
         ]
 
         for i, s in enumerate(suggestions, 1):
-            lines.extend([
-                "",
-                f"[{i}] {s.failure_pattern.value} ({s.priority.upper()} priority)",
-                f"    Target: {s.target_prompt} > {s.section}",
-                f"    Issue:  {s.current_behavior}",
-                f"    Fix:    {s.suggested_change}",
-                f"    Impact: {s.expected_impact}",
-            ])
+            lines.extend(
+                [
+                    "",
+                    f"[{i}] {s.failure_pattern.value} ({s.priority.upper()} priority)",
+                    f"    Target: {s.target_prompt} > {s.section}",
+                    f"    Issue:  {s.current_behavior}",
+                    f"    Fix:    {s.suggested_change}",
+                    f"    Impact: {s.expected_impact}",
+                ]
+            )
 
         lines.append("")
         lines.append("=" * 60)

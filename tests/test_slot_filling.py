@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.conversation.slot_manager import SlotManager, SlotStatus
+from src.conversation.slot_manager import SlotStatus
 
 
 class TestSlotSetAndValidation:

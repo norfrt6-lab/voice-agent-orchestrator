@@ -5,8 +5,8 @@ In production, this would integrate with ServiceTitan, Jobber, Housecall Pro,
 or a custom scheduling API via HTTP client.
 """
 
-import random
 import logging
+import random
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -47,9 +47,7 @@ random.seed(42)
 MOCK_SCHEDULE = _generate_schedule()
 
 
-def check_availability(
-    service_type: str, date: str, preferred_time: Optional[str] = None
-) -> dict:
+def check_availability(service_type: str, date: str, preferred_time: Optional[str] = None) -> dict:
     """
     Check appointment availability for a service on a given date.
 
@@ -104,11 +102,13 @@ def get_available_dates(service_type: str, limit: int = 5) -> list[dict]:
     results = []
     for date_str, day_data in sorted(MOCK_SCHEDULE.items()):
         if day_data["times"]:
-            results.append({
-                "date": date_str,
-                "day_name": day_data["day_name"],
-                "slot_count": len(day_data["times"]),
-            })
+            results.append(
+                {
+                    "date": date_str,
+                    "day_name": day_data["day_name"],
+                    "slot_count": len(day_data["times"]),
+                }
+            )
         if len(results) >= limit:
             break
     return results

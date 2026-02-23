@@ -5,8 +5,8 @@ In production, this would integrate with a CRM / scheduling platform
 (ServiceTitan, Jobber, Housecall Pro, or a custom backend).
 """
 
-import uuid
 import logging
+import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -27,9 +27,14 @@ def create_booking(
 ) -> dict:
     """Create a new booking and return the confirmation details."""
     missing = [
-        field_name for field_name, value in [
-            ("name", name), ("phone", phone), ("service", service),
-            ("date", date), ("time", time), ("address", address),
+        field_name
+        for field_name, value in [
+            ("name", name),
+            ("phone", phone),
+            ("service", service),
+            ("date", date),
+            ("time", time),
+            ("address", address),
         ]
         if not value or not value.strip()
     ]
