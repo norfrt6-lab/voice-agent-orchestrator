@@ -17,36 +17,43 @@ from src.config import settings
 logger = logging.getLogger(__name__)
 
 
-def _run_voice_mode() -> None:
-    """Start the full LiveKit voice pipeline (requires API keys)."""
-    from livekit.agents import AgentSession, WorkerOptions, cli
+def _build_session():
+    """Build a new AgentSession with the configured STT/LLM/TTS pipeline."""
+    from livekit.agents import AgentSession
     from livekit.plugins import deepgram, openai, cartesia, silero
 
     from src.schemas.customer_schema import SessionData
+
+    return AgentSession[SessionData](
+        stt=deepgram.STT(
+            model=settings.model.stt_model,
+            language=settings.model.stt_language,
+        ),
+        llm=openai.LLM(
+            model=settings.model.llm_model,
+            temperature=settings.model.llm_temperature,
+        ),
+        tts=cartesia.TTS(
+            model=settings.model.tts_model,
+            voice=settings.model.tts_voice_id,
+        ),
+        vad=silero.VAD.load(),
+        userdata=SessionData(),
+    )
+
+
+async def entrypoint(ctx) -> None:
+    """LiveKit agent entrypoint — must be module-level for Windows pickling."""
     from src.agents.intake_agent import IntakeAgent
 
-    def build_session() -> AgentSession:
-        return AgentSession[SessionData](
-            stt=deepgram.STT(
-                model=settings.model.stt_model,
-                language=settings.model.stt_language,
-            ),
-            llm=openai.LLM(
-                model=settings.model.llm_model,
-                temperature=settings.model.llm_temperature,
-            ),
-            tts=cartesia.TTS(
-                model=settings.model.tts_model,
-                voice=settings.model.tts_voice_id,
-            ),
-            vad=silero.VAD.load(),
-            userdata=SessionData(),
-        )
+    session = _build_session()
+    await session.start(room=ctx.room, agent=IntakeAgent())
+    logger.info("Voice agent session started in room: %s", ctx.room.name)
 
-    async def entrypoint(ctx) -> None:
-        session = build_session()
-        await session.start(room=ctx.room, agent=IntakeAgent())
-        logger.info("Voice agent session started in room: %s", ctx.room.name)
+
+def _run_voice_mode() -> None:
+    """Start the full LiveKit voice pipeline (requires API keys)."""
+    from livekit.agents import WorkerOptions, cli
 
     worker = WorkerOptions(
         entrypoint_fnc=entrypoint,
