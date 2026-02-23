@@ -16,6 +16,7 @@ Usage:
 import logging
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, Optional
 
@@ -54,6 +55,24 @@ def _validate_phone(value: str) -> bool:
 def _validate_service(value: str) -> bool:
     normalized = value.lower().strip()
     return any(svc in normalized or normalized in svc for svc in get_valid_service_terms())
+
+
+def _validate_date(value: str) -> bool:
+    """Validate date is in YYYY-MM-DD format."""
+    try:
+        datetime.strptime(value.strip(), "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
+
+
+def _validate_time(value: str) -> bool:
+    """Validate time is in HH:MM format."""
+    try:
+        datetime.strptime(value.strip(), "%H:%M")
+        return True
+    except ValueError:
+        return False
 
 
 def _validate_address(value: str) -> bool:
@@ -115,11 +134,13 @@ class SlotManager:
             name="preferred_date",
             display_name="preferred date",
             prompt_hint="Ask when they'd like the appointment",
+            validator=_validate_date,
         ),
         SlotDefinition(
             name="preferred_time",
             display_name="preferred time",
             prompt_hint="Ask what time works best",
+            validator=_validate_time,
         ),
         SlotDefinition(
             name="customer_address",
