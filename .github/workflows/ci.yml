@@ -33,7 +33,7 @@ jobs:
         run: mypy src/ --ignore-missing-imports
 
       - name: Run tests with coverage
-        run: pytest tests/ -v --tb=short --cov=src --cov-report=term-missing
+        run: pytest tests/ -v --tb=short --cov=src --cov-report=term-missing --cov-fail-under=80
 
       - name: Run evaluation
         run: python -m src.evaluation.run_eval --transcripts sample_transcripts/
