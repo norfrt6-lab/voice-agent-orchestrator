@@ -77,7 +77,7 @@ def create_booking(
 
     ref = f"BK-{uuid.uuid4().hex[:6].upper()}"
 
-    booking = {
+    booking: BookingRecord = {
         "booking_ref": ref,
         "customer_name": name,
         "customer_phone": phone,
@@ -115,7 +115,9 @@ def reschedule_booking(booking_ref: str, new_date: str, new_time: str) -> Bookin
     """Reschedule an existing booking to a new date/time."""
     if booking_ref not in _bookings:
         return {"success": False, "message": f"Booking {booking_ref} not found."}
-    _bookings[booking_ref].update(date=new_date, time=new_time, status="rescheduled")
+    _bookings[booking_ref]["date"] = new_date
+    _bookings[booking_ref]["time"] = new_time
+    _bookings[booking_ref]["status"] = "rescheduled"
     logger.info("Booking rescheduled: %s to %s %s", booking_ref, new_date, new_time)
     return {
         "success": True,
