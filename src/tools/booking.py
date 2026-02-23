@@ -30,11 +30,16 @@ class BookingRecord(TypedDict):
     created_at: str
 
 
-class BookingResult(TypedDict, total=False):
-    """Result from create_booking, cancel_booking, or reschedule_booking."""
+class _BookingResultRequired(TypedDict):
+    """Required fields always present in booking results."""
 
     success: bool
     message: str
+
+
+class BookingResult(_BookingResultRequired, total=False):
+    """Result from create_booking, cancel_booking, or reschedule_booking."""
+
     booking_ref: str
     details: BookingRecord
 
