@@ -118,6 +118,22 @@ Maps each detected failure to a specific prompt modification with expected impac
 
 All business values are configurable via environment variables — nothing is hardcoded in agent logic. See `.env.example` for all options.
 
+Config validation runs at startup — invalid values (e.g. temperature outside 0.0-2.0, negative thresholds) raise clear error messages immediately rather than causing obscure failures later.
+
+## Utilities
+
+### Phone Normalization
+
+`src/utils.normalize_phone()` strips formatting characters and normalizes international prefixes. Used by both the slot manager and customer lookup to ensure consistent matching.
+
+### Correlation ID Logging
+
+`src/logging_context` provides `set_call_id()` and `get_call_logger()` for tracing a single caller's journey across the multi-agent system. All agent and tool modules emit logs with a `call_id` field.
+
+### Test Isolation
+
+Each mock tool module (`booking`, `customer`, `availability`) exposes a `reset()` function. An `autouse` pytest fixture in `conftest.py` calls all resets before each test, preventing cross-test state pollution.
+
 ## Project Structure
 
 ```
@@ -128,9 +144,11 @@ voice-agent-orchestrator/
 │   ├── evaluation/       # Metrics, failure detection, auto-improvement
 │   ├── prompts/          # System prompts and templates
 │   ├── schemas/          # Pydantic models
-│   ├── tools/            # Mock service integrations
-│   └── config.py         # Centralized configuration
-├── tests/                # Test suite
+│   ├── tools/            # Mock service integrations (with TypedDict returns)
+│   ├── config.py         # Centralized configuration with startup validation
+│   ├── logging_context.py # Correlation ID logging
+│   └── utils.py          # Shared utilities (phone normalization)
+├── tests/                # Test suite with autouse reset fixtures
 ├── sample_transcripts/   # 5 evaluation scenarios
 ├── main.py               # LiveKit entry point
 ├── pyproject.toml
