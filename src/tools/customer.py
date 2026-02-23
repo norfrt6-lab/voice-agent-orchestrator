@@ -8,6 +8,8 @@ ServiceTitan customer records) to identify returning callers.
 import logging
 from typing import Optional
 
+from src.utils import normalize_phone
+
 logger = logging.getLogger(__name__)
 
 _customers: dict[str, dict] = {
@@ -32,7 +34,7 @@ _customers: dict[str, dict] = {
 
 def lookup_customer(phone: str) -> Optional[dict]:
     """Look up a customer by phone number. Returns None if not found."""
-    cleaned = phone.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+    cleaned = normalize_phone(phone)
     if cleaned.startswith("+61"):
         cleaned = "0" + cleaned[3:]
     result = _customers.get(cleaned)
@@ -45,7 +47,7 @@ def create_customer(
     name: str, phone: str, email: Optional[str] = None, address: Optional[str] = None
 ) -> dict:
     """Create a new customer record."""
-    cleaned = phone.replace(" ", "").replace("-", "")
+    cleaned = normalize_phone(phone)
     customer = {
         "name": name,
         "phone": cleaned,
