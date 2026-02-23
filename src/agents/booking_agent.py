@@ -107,6 +107,10 @@ class BookingAgent(Agent):
     # Correction tool
     # ------------------------------------------------------------------ #
 
+    _CORRECTABLE_FIELDS: frozenset[str] = frozenset(
+        d.name for d in SlotManager.SLOT_DEFINITIONS
+    )
+
     @function_tool()
     async def correct_detail(
         self, context: RunContext[SessionData], field_name: str, new_value: str
@@ -117,6 +121,9 @@ class BookingAgent(Agent):
         service_type, preferred_date, preferred_time,
         customer_address, job_description.
         """
+        if field_name not in self._CORRECTABLE_FIELDS:
+            valid = ", ".join(sorted(self._CORRECTABLE_FIELDS))
+            return f"Unknown field '{field_name}'. Valid: {valid}."
         ok, msg = self._slots.correct_slot(field_name, new_value)
         if ok:
             setattr(context.userdata, field_name, self._slots.get_slot_value(field_name))
