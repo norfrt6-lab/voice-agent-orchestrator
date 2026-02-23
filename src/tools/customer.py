@@ -5,7 +5,7 @@ In production, this would query a CRM database (e.g. HubSpot, Salesforce,
 ServiceTitan customer records) to identify returning callers.
 """
 
-from typing import Optional, TypedDict
+from typing import Optional, TypedDict, cast
 
 from src.logging_context import get_call_logger
 from src.utils import normalize_phone
@@ -42,7 +42,9 @@ _SEED_CUSTOMERS: dict[str, CustomerRecord] = {
     },
 }
 
-_customers: dict[str, CustomerRecord] = {k: dict(v) for k, v in _SEED_CUSTOMERS.items()}
+_customers: dict[str, CustomerRecord] = {
+    k: cast(CustomerRecord, {**v}) for k, v in _SEED_CUSTOMERS.items()
+}
 
 
 def lookup_customer(phone: str) -> Optional[CustomerRecord]:
@@ -61,7 +63,7 @@ def create_customer(
 ) -> CustomerRecord:
     """Create a new customer record."""
     cleaned = normalize_phone(phone)
-    customer = {
+    customer: CustomerRecord = {
         "name": name,
         "phone": cleaned,
         "email": email or "",
@@ -77,4 +79,6 @@ def create_customer(
 def reset() -> None:
     """Restore customers to seed data. Used by test fixtures for isolation."""
     _customers.clear()
-    _customers.update({k: dict(v) for k, v in _SEED_CUSTOMERS.items()})
+    _customers.update({
+        k: cast(CustomerRecord, {**v}) for k, v in _SEED_CUSTOMERS.items()
+    })

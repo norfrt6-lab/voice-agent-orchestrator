@@ -112,7 +112,7 @@ def check_availability(
         }
 
     if day_data["times"]:
-        slots = [
+        slots: list[TimeSlot] = [
             {"time": t, "technician": random.choice(techs), "date": date}
             for t in day_data["times"][:MAX_SLOTS_RETURNED]
         ]
@@ -134,7 +134,7 @@ def check_availability(
 
 def get_available_dates(service_type: str, limit: int = 5) -> list[DateAvailability]:
     """Get the next N dates with available slots."""
-    results = []
+    results: list[DateAvailability] = []
     for date_str, day_data in sorted(MOCK_SCHEDULE.items()):
         if day_data["times"]:
             results.append(
