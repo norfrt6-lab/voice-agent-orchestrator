@@ -8,7 +8,6 @@ function tool so the LLM can be guided one question at a time.
 
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -17,6 +16,7 @@ if TYPE_CHECKING:
 from src.agents.compat import Agent, RunContext, function_tool
 from src.conversation.guardrails import GuardrailPipeline
 from src.conversation.slot_manager import SlotManager
+from src.logging_context import get_call_logger
 from src.prompts.prompt_templates import (
     build_alternative_times_prompt,
 )
@@ -26,7 +26,7 @@ from src.tools.availability import check_availability, get_available_dates
 from src.tools.booking import create_booking
 from src.tools.services import match_service
 
-logger = logging.getLogger(__name__)
+logger = get_call_logger(__name__)
 
 
 class BookingAgent(Agent):
