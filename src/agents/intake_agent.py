@@ -7,7 +7,6 @@ appropriate specialist agent via function tool handoffs.
 
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -17,11 +16,12 @@ if TYPE_CHECKING:
 
 from src.agents.compat import Agent, RunContext, function_tool
 from src.conversation.guardrails import GuardrailPipeline
+from src.logging_context import get_call_logger
 from src.prompts.system_prompts import INTAKE_SYSTEM_PROMPT
 from src.schemas.customer_schema import SessionData
 from src.tools.customer import lookup_customer
 
-logger = logging.getLogger(__name__)
+logger = get_call_logger(__name__)
 
 
 class IntakeAgent(Agent):

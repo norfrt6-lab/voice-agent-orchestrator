@@ -10,15 +10,15 @@ Four independent guardrail layers, each checking a different concern:
 These are composed into a GuardrailPipeline for pre-LLM and post-LLM checks.
 """
 
-import logging
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
 from src.config import settings
+from src.logging_context import get_call_logger
 from src.tools.services import get_valid_service_terms
 
-logger = logging.getLogger(__name__)
+logger = get_call_logger(__name__)
 
 
 class Severity(str, Enum):

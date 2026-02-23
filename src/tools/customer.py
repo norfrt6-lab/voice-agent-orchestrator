@@ -5,12 +5,12 @@ In production, this would query a CRM database (e.g. HubSpot, Salesforce,
 ServiceTitan customer records) to identify returning callers.
 """
 
-import logging
 from typing import Optional, TypedDict
 
+from src.logging_context import get_call_logger
 from src.utils import normalize_phone
 
-logger = logging.getLogger(__name__)
+logger = get_call_logger(__name__)
 
 
 class CustomerRecord(TypedDict):

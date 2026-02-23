@@ -6,14 +6,13 @@ automatically. It provides appropriate guidance and ensures proper
 handoff documentation.
 """
 
-import logging
-
 from src.agents.compat import Agent, RunContext, function_tool
 from src.config import settings
+from src.logging_context import get_call_logger
 from src.prompts.system_prompts import ESCALATION_SYSTEM_PROMPT
 from src.schemas.customer_schema import SessionData
 
-logger = logging.getLogger(__name__)
+logger = get_call_logger(__name__)
 
 
 class EscalationAgent(Agent):

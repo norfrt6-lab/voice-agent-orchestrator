@@ -5,12 +5,13 @@ In production, this would integrate with a CRM / scheduling platform
 (ServiceTitan, Jobber, Housecall Pro, or a custom backend).
 """
 
-import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, TypedDict
 
-logger = logging.getLogger(__name__)
+from src.logging_context import get_call_logger
+
+logger = get_call_logger(__name__)
 
 
 class BookingRecord(TypedDict):
