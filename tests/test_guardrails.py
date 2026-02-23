@@ -166,6 +166,7 @@ class TestEscalationGuardrail:
         result = self.guard.check_escalation_needed("Help me", error_count=5)
         assert result.passed is False
         assert result.violation_type == "repeated_confusion"
+        assert result.severity == Severity.ESCALATE
 
     def test_below_error_threshold_passes(self):
         result = self.guard.check_escalation_needed("Help me", error_count=1)
