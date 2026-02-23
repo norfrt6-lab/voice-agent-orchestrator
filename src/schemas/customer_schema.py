@@ -1,6 +1,6 @@
 """Customer data models and per-session state."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 from pydantic import BaseModel
@@ -37,4 +37,3 @@ class SessionData:
     intent: Optional[str] = None
     booking_ref: Optional[str] = None
     error_count: int = 0
-    slot_attempts: dict = field(default_factory=dict)
