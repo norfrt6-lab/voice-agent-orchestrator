@@ -14,7 +14,7 @@ Usage:
 import argparse
 
 from src.config import settings
-from src.conversation.guardrails import GuardrailPipeline
+from src.conversation.guardrails import GuardrailPipeline, Severity
 from src.conversation.slot_manager import SlotManager
 from src.conversation.state_machine import (
     ConversationState,
@@ -152,10 +152,10 @@ class ConsoleSession:
         # Check guardrails first
         violations = self.guardrails.check_user_input(text, self.session.error_count)
         for v in violations:
-            if v.severity == "escalate":
+            if v.severity == Severity.ESCALATE:
                 self._handle_escalation(v.violation_type or "unknown", text)
                 return
-            if v.severity == "block":
+            if v.severity == Severity.BLOCK:
                 self.agent_say(
                     "I can only help with home services like plumbing, electrical, "
                     "and HVAC. Is there something along those lines I can help with?"

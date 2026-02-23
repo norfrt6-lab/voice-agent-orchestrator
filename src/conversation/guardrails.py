@@ -209,7 +209,7 @@ class EscalationGuardrail:
                 passed=False,
                 violation_type="repeated_confusion",
                 message=f"Error count ({error_count}) exceeds threshold ({threshold}).",
-                severity="escalate",
+                severity=Severity.ESCALATE,
             )
 
         return GuardrailResult(passed=True)
