@@ -15,6 +15,13 @@ from src.schemas.conversation_schema import CallOutcome, ConversationTranscript,
 
 logger = logging.getLogger(__name__)
 
+# Detection thresholds
+REPEATED_SLOT_THRESHOLD = 3
+CONFIRMATION_LOOP_THRESHOLD = 3
+MAX_REASONABLE_AGENTS = 3
+INCOMPLETE_BOOKING_MIN_SLOTS = 4
+TOTAL_REQUIRED_SLOTS = 6
+
 
 class FailurePattern(str, Enum):
     """Categorized failure patterns detectable in transcripts."""
@@ -83,7 +90,7 @@ class FailureDetector:
                     slot_questions.setdefault(slot_keyword, []).append(i)
 
         for slot, indices in slot_questions.items():
-            if len(indices) >= 3:
+            if len(indices) >= REPEATED_SLOT_THRESHOLD:
                 failures.append(
                     DetectedFailure(
                         pattern=FailurePattern.REPEATED_SLOT_FAILURE,
@@ -116,7 +123,7 @@ class FailureDetector:
                     or "here's what i have" in text
                 ):
                     confirmation_count += 1
-                    if confirmation_count >= 3:
+                    if confirmation_count >= CONFIRMATION_LOOP_THRESHOLD:
                         failures.append(
                             DetectedFailure(
                                 pattern=FailurePattern.CONFIRMATION_LOOP,
@@ -143,7 +150,7 @@ class FailureDetector:
         failures = []
         agents_used = transcript.agents_used or []
 
-        if len(agents_used) > 3:
+        if len(agents_used) > MAX_REASONABLE_AGENTS:
             failures.append(
                 DetectedFailure(
                     pattern=FailurePattern.WRONG_AGENT_HANDOFF,
@@ -358,7 +365,7 @@ class FailureDetector:
         slots = transcript.slots_collected or {}
         filled_count = sum(1 for v in slots.values() if v)
 
-        if filled_count >= 4 and transcript.outcome not in (
+        if filled_count >= INCOMPLETE_BOOKING_MIN_SLOTS and transcript.outcome not in (
             CallOutcome.BOOKING_MADE,
             CallOutcome.ESCALATED,
         ):
@@ -367,7 +374,7 @@ class FailureDetector:
                     pattern=FailurePattern.INCOMPLETE_BOOKING,
                     severity="high",
                     evidence=(
-                        f"Booking had {filled_count}/6 slots"
+                        f"Booking had {filled_count}/{TOTAL_REQUIRED_SLOTS} slots"
                         " filled but ended as"
                         f" {transcript.outcome.value}"
                     ),

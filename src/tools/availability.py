@@ -12,6 +12,12 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+# Schedule generation parameters
+SCHEDULE_DAYS = 14
+AVAILABILITY_PROBABILITY = 0.7
+SCHEDULE_SEED = 42
+MAX_SLOTS_RETURNED = 5
+
 TECHNICIANS: dict[str, list[str]] = {
     "plumbing": ["Mike T.", "Sarah L."],
     "electrical": ["James K.", "Priya M."],
@@ -27,7 +33,7 @@ def _generate_schedule() -> dict[str, dict]:
     schedule: dict[str, dict] = {}
     base = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
-    for day_offset in range(1, 15):
+    for day_offset in range(1, SCHEDULE_DAYS + 1):
         date = base + timedelta(days=day_offset)
         if date.weekday() == 6:  # Sunday closed
             continue
@@ -37,13 +43,13 @@ def _generate_schedule() -> dict[str, dict]:
 
         hours = [9, 10, 11, 12, 13] if date.weekday() == 5 else [8, 9, 10, 11, 13, 14, 15, 16, 17]
 
-        available_times = [f"{h:02d}:00" for h in hours if random.random() < 0.7]
+        available_times = [f"{h:02d}:00" for h in hours if random.random() < AVAILABILITY_PROBABILITY]
         schedule[date_str] = {"day_name": day_name, "times": available_times}
 
     return schedule
 
 
-random.seed(42)
+random.seed(SCHEDULE_SEED)
 MOCK_SCHEDULE = _generate_schedule()
 
 
@@ -79,7 +85,7 @@ def check_availability(service_type: str, date: str, preferred_time: Optional[st
     if day_data["times"]:
         slots = [
             {"time": t, "technician": random.choice(techs), "date": date}
-            for t in day_data["times"][:5]
+            for t in day_data["times"][:MAX_SLOTS_RETURNED]
         ]
         return {
             "available": True,
