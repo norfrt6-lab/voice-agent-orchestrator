@@ -8,9 +8,34 @@ or a custom scheduling API via HTTP client.
 import logging
 import random
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, TypedDict
 
 logger = logging.getLogger(__name__)
+
+
+class TimeSlot(TypedDict):
+    """A single available time slot."""
+
+    time: str
+    technician: str
+    date: str
+
+
+class AvailabilityResult(TypedDict):
+    """Result from check_availability."""
+
+    available: bool
+    slots: list[TimeSlot]
+    next_available: Optional[str]
+    message: str
+
+
+class DateAvailability(TypedDict):
+    """Summary of availability for a single date."""
+
+    date: str
+    day_name: str
+    slot_count: int
 
 # Schedule generation parameters
 SCHEDULE_DAYS = 14
@@ -55,7 +80,9 @@ random.seed(SCHEDULE_SEED)
 MOCK_SCHEDULE = _generate_schedule()
 
 
-def check_availability(service_type: str, date: str, preferred_time: Optional[str] = None) -> dict:
+def check_availability(
+    service_type: str, date: str, preferred_time: Optional[str] = None
+) -> AvailabilityResult:
     """
     Check appointment availability for a service on a given date.
 
@@ -105,7 +132,7 @@ def check_availability(service_type: str, date: str, preferred_time: Optional[st
     }
 
 
-def get_available_dates(service_type: str, limit: int = 5) -> list[dict]:
+def get_available_dates(service_type: str, limit: int = 5) -> list[DateAvailability]:
     """Get the next N dates with available slots."""
     results = []
     for date_str, day_data in sorted(MOCK_SCHEDULE.items()):

@@ -8,11 +8,36 @@ In production, this would integrate with a CRM / scheduling platform
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, TypedDict
 
 logger = logging.getLogger(__name__)
 
-_bookings: dict[str, dict] = {}
+
+class BookingRecord(TypedDict):
+    """Full booking record stored in the system."""
+
+    booking_ref: str
+    customer_name: str
+    customer_phone: str
+    service_type: str
+    date: str
+    time: str
+    address: str
+    job_description: str
+    technician: str
+    status: str
+    created_at: str
+
+
+class BookingResult(TypedDict, total=False):
+    """Result from create_booking, cancel_booking, or reschedule_booking."""
+
+    success: bool
+    message: str
+    booking_ref: str
+    details: BookingRecord
+
+_bookings: dict[str, BookingRecord] = {}
 
 
 def create_booking(
@@ -24,7 +49,7 @@ def create_booking(
     address: str,
     description: Optional[str] = None,
     technician: Optional[str] = None,
-) -> dict:
+) -> BookingResult:
     """Create a new booking and return the confirmation details."""
     missing = [
         field_name
@@ -71,7 +96,7 @@ def create_booking(
     }
 
 
-def cancel_booking(booking_ref: str) -> dict:
+def cancel_booking(booking_ref: str) -> BookingResult:
     """Cancel an existing booking by reference number."""
     if booking_ref not in _bookings:
         return {"success": False, "message": f"Booking {booking_ref} not found."}
@@ -80,7 +105,7 @@ def cancel_booking(booking_ref: str) -> dict:
     return {"success": True, "message": f"Booking {booking_ref} has been cancelled."}
 
 
-def reschedule_booking(booking_ref: str, new_date: str, new_time: str) -> dict:
+def reschedule_booking(booking_ref: str, new_date: str, new_time: str) -> BookingResult:
     """Reschedule an existing booking to a new date/time."""
     if booking_ref not in _bookings:
         return {"success": False, "message": f"Booking {booking_ref} not found."}
@@ -93,6 +118,6 @@ def reschedule_booking(booking_ref: str, new_date: str, new_time: str) -> dict:
     }
 
 
-def get_booking(booking_ref: str) -> Optional[dict]:
+def get_booking(booking_ref: str) -> Optional[BookingRecord]:
     """Retrieve a booking by reference number."""
     return _bookings.get(booking_ref)
