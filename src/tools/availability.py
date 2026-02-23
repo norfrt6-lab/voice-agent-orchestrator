@@ -7,7 +7,7 @@ or a custom scheduling API via HTTP client.
 
 import logging
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, TypedDict
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ TECHNICIANS: dict[str, list[str]] = {
 def _generate_schedule() -> dict[str, dict]:
     """Generate a realistic 14-day schedule with ~70% availability."""
     schedule: dict[str, dict] = {}
-    base = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    base = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
 
     for day_offset in range(1, SCHEDULE_DAYS + 1):
         date = base + timedelta(days=day_offset)
