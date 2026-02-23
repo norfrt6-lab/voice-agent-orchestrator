@@ -1,0 +1,237 @@
+"""
+Booking agent — collects slot data, confirms details, and creates bookings.
+
+This is the most complex agent, implementing the full slot-filling lifecycle:
+Collect -> Validate -> Confirm -> Book. Each slot is recorded via its own
+function tool so the LLM can be guided one question at a time.
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.agents.escalation_agent import EscalationAgent
+
+from src.agents.compat import Agent, function_tool, RunContext
+
+from src.schemas.customer_schema import SessionData
+from src.prompts.system_prompts import BOOKING_SYSTEM_PROMPT
+from src.prompts.prompt_templates import (
+    build_slot_collection_prompt,
+    build_confirmation_prompt,
+    build_alternative_times_prompt,
+)
+from src.conversation.slot_manager import SlotManager
+from src.conversation.guardrails import GuardrailPipeline
+from src.tools.availability import check_availability, get_available_dates
+from src.tools.booking import create_booking
+from src.tools.services import match_service
+
+logger = logging.getLogger(__name__)
+
+
+class BookingAgent(Agent):
+    """Slot-filling booking specialist with confirmation gates."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            instructions=BOOKING_SYSTEM_PROMPT,
+        )
+        self._slots = SlotManager()
+        self._guardrails = GuardrailPipeline()
+
+    # ------------------------------------------------------------------ #
+    # Slot recording tools — one per field
+    # ------------------------------------------------------------------ #
+
+    @function_tool()
+    async def record_customer_name(
+        self, context: RunContext[SessionData], name: str
+    ) -> str:
+        """Record the customer's full name."""
+        ok, msg = self._slots.set_slot("customer_name", name)
+        if ok:
+            context.userdata.customer_name = self._slots.get_slot_value("customer_name")
+        return msg + self._next_slot_hint()
+
+    @function_tool()
+    async def record_phone_number(
+        self, context: RunContext[SessionData], phone: str
+    ) -> str:
+        """Record the customer's phone number."""
+        ok, msg = self._slots.set_slot("customer_phone", phone)
+        if ok:
+            context.userdata.customer_phone = self._slots.get_slot_value("customer_phone")
+        elif self._slots.has_exceeded_retries("customer_phone"):
+            return msg + " Let's move on and we can come back to this."
+        return msg + self._next_slot_hint()
+
+    @function_tool()
+    async def record_service_type(
+        self, context: RunContext[SessionData], service: str
+    ) -> str:
+        """Record the type of service the customer needs."""
+        matched = match_service(service)
+        if matched:
+            self._slots.set_slot("service_type", matched)
+            context.userdata.service_type = matched
+            return f"Got it — {matched} service." + self._next_slot_hint()
+        ok, msg = self._slots.set_slot("service_type", service)
+        if ok:
+            context.userdata.service_type = self._slots.get_slot_value("service_type")
+        return msg + self._next_slot_hint()
+
+    @function_tool()
+    async def record_preferred_date(
+        self, context: RunContext[SessionData], date: str
+    ) -> str:
+        """Record the customer's preferred appointment date (YYYY-MM-DD format)."""
+        ok, msg = self._slots.set_slot("preferred_date", date)
+        if ok:
+            context.userdata.preferred_date = self._slots.get_slot_value("preferred_date")
+        return msg + self._next_slot_hint()
+
+    @function_tool()
+    async def record_preferred_time(
+        self, context: RunContext[SessionData], time: str
+    ) -> str:
+        """Record the customer's preferred appointment time (HH:MM format)."""
+        ok, msg = self._slots.set_slot("preferred_time", time)
+        if ok:
+            context.userdata.preferred_time = self._slots.get_slot_value("preferred_time")
+        return msg + self._next_slot_hint()
+
+    @function_tool()
+    async def record_address(
+        self, context: RunContext[SessionData], address: str
+    ) -> str:
+        """Record the service address."""
+        ok, msg = self._slots.set_slot("customer_address", address)
+        if ok:
+            context.userdata.customer_address = self._slots.get_slot_value("customer_address")
+        return msg + self._next_slot_hint()
+
+    @function_tool()
+    async def record_job_description(
+        self, context: RunContext[SessionData], description: str
+    ) -> str:
+        """Record a brief description of the issue or job needed."""
+        ok, msg = self._slots.set_slot("job_description", description)
+        if ok:
+            context.userdata.job_description = self._slots.get_slot_value("job_description")
+        return msg + self._next_slot_hint()
+
+    # ------------------------------------------------------------------ #
+    # Correction tool
+    # ------------------------------------------------------------------ #
+
+    @function_tool()
+    async def correct_detail(
+        self, context: RunContext[SessionData], field_name: str, new_value: str
+    ) -> str:
+        """Correct a previously recorded detail. field_name is one of: customer_name, customer_phone, service_type, preferred_date, preferred_time, customer_address, job_description."""
+        ok, msg = self._slots.correct_slot(field_name, new_value)
+        if ok:
+            setattr(context.userdata, field_name, self._slots.get_slot_value(field_name))
+            return f"Updated {field_name.replace('_', ' ')} to {self._slots.get_slot_value(field_name)}."
+        return msg
+
+    # ------------------------------------------------------------------ #
+    # Confirmation gate
+    # ------------------------------------------------------------------ #
+
+    @function_tool()
+    async def confirm_booking_details(
+        self, context: RunContext[SessionData]
+    ) -> str:
+        """Read back all collected details to the caller for confirmation. Call this when all required slots are filled."""
+        if not self._slots.all_required_filled():
+            missing = self._slots.get_missing_slots()
+            names = [s.display_name for s in missing]
+            return f"Still need: {', '.join(names)}. Please collect these first."
+        summary = self._slots.get_confirmation_summary()
+        return summary + '\n\nPlease ask: "Does everything sound correct?"'
+
+    # ------------------------------------------------------------------ #
+    # Availability check + booking
+    # ------------------------------------------------------------------ #
+
+    @function_tool()
+    async def check_and_book(
+        self, context: RunContext[SessionData]
+    ) -> str:
+        """Check availability and create the booking. Only call this AFTER the caller explicitly confirms details."""
+        if not self._slots.all_required_filled():
+            return "Cannot book — required information is still missing."
+
+        # Mark all as confirmed since the caller approved
+        self._slots.confirm_all()
+
+        slot_data = self._slots.to_dict()
+        service = slot_data.get("service_type", "general handyman")
+        date = slot_data.get("preferred_date", "")
+        time = slot_data.get("preferred_time")
+
+        # Check availability
+        avail = check_availability(service, date, time)
+
+        if not avail["available"]:
+            # Offer alternatives
+            alt_dates = get_available_dates(service, limit=3)
+            if alt_dates:
+                alt_slots = [
+                    {"date": d["date"], "time": "09:00", "technician": "Available tech"}
+                    for d in alt_dates
+                ]
+                return build_alternative_times_prompt(date, time or "any", alt_slots)
+            return (
+                f"Unfortunately, there's no availability for {service} in the coming days. "
+                "Would you like me to put you on a waitlist, or connect you with our team?"
+            )
+
+        # Book with the first available slot
+        selected = avail["slots"][0]
+        result = create_booking(
+            name=slot_data.get("customer_name", ""),
+            phone=slot_data.get("customer_phone", ""),
+            service=service,
+            date=selected["date"],
+            time=selected["time"],
+            address=slot_data.get("customer_address", ""),
+            description=slot_data.get("job_description"),
+            technician=selected.get("technician"),
+        )
+
+        if result["success"]:
+            context.userdata.booking_ref = result["booking_ref"]
+            logger.info("Booking created: %s", result["booking_ref"])
+            return str(result["message"])
+
+        return "Something went wrong creating the booking. Let me connect you with our team."
+
+    # ------------------------------------------------------------------ #
+    # Escalation handoff
+    # ------------------------------------------------------------------ #
+
+    @function_tool()
+    async def escalate_to_human(
+        self, context: RunContext[SessionData]
+    ) -> "EscalationAgent":
+        """Transfer to a human agent when the caller is frustrated or the system cannot resolve their issue."""
+        from src.agents.escalation_agent import EscalationAgent
+
+        logger.info("BookingAgent escalating to human")
+        return EscalationAgent(reason="booking_difficulty")
+
+    # ------------------------------------------------------------------ #
+    # Helpers
+    # ------------------------------------------------------------------ #
+
+    def _next_slot_hint(self) -> str:
+        """Generate a hint about what to ask next."""
+        next_slot = self._slots.get_next_empty_slot()
+        if next_slot:
+            return f" Now ask for their {next_slot.display_name}."
+        return " All details collected — use confirm_booking_details to read them back."

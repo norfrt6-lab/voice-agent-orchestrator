@@ -1,0 +1,41 @@
+{
+  "call_id": "CALL-003",
+  "timestamp": "2025-03-16T09:00:00Z",
+  "duration_seconds": 95.0,
+  "outcome": "caller_hung_up",
+  "slots_collected": {
+    "customer_name": "David Lee",
+    "customer_phone": "0477111222",
+    "service_type": "hvac",
+    "preferred_date": "",
+    "preferred_time": "",
+    "customer_address": ""
+  },
+  "slots_confirmed": false,
+  "agents_used": ["IntakeAgent", "BookingAgent"],
+  "handoff_count": 1,
+  "error_count": 0,
+  "metadata": {
+    "corrections": 0,
+    "total_attempts": 3,
+    "scope_checks": 1,
+    "scope_violations": 0,
+    "hallucination_checks": 4,
+    "hallucinations_detected": 0,
+    "recoveries": 0
+  },
+  "turns": [
+    {"speaker": "agent", "text": "Hi, thanks for calling Reliable Home Services. What can I help you with today?", "timestamp": 0.0, "agent_id": "IntakeAgent"},
+    {"speaker": "user", "text": "I need someone to look at my air conditioning. It's making a weird noise.", "timestamp": 3.5},
+    {"speaker": "agent", "text": "No worries, I'll get you through to our booking team for that HVAC service.", "timestamp": 6.0, "agent_id": "IntakeAgent", "tool_calls": ["route_to_booking"]},
+    {"speaker": "agent", "text": "Hi there! I can help you book an HVAC technician. Can I start with your name?", "timestamp": 9.0, "agent_id": "BookingAgent"},
+    {"speaker": "user", "text": "David Lee.", "timestamp": 11.0},
+    {"speaker": "agent", "text": "Thanks David. And your phone number?", "timestamp": 12.5, "agent_id": "BookingAgent", "tool_calls": ["record_customer_name"]},
+    {"speaker": "user", "text": "0477 111 222", "timestamp": 15.0},
+    {"speaker": "agent", "text": "Got it. I've noted HVAC service. What date works for you?", "timestamp": 17.0, "agent_id": "BookingAgent", "tool_calls": ["record_phone_number", "record_service_type"]},
+    {"speaker": "user", "text": "Actually, hold on. How much does an HVAC call-out cost?", "timestamp": 20.0},
+    {"speaker": "agent", "text": "Our HVAC call-out fee is ninety-nine dollars, and total service typically ranges from one fifty to five hundred depending on the job. Would you like to go ahead and book?", "timestamp": 23.0, "agent_id": "BookingAgent"},
+    {"speaker": "user", "text": "I need to check with my partner first. I'll call back.", "timestamp": 28.0},
+    {"speaker": "agent", "text": "No worries at all, David. We're here whenever you're ready. Have a good day!", "timestamp": 30.0, "agent_id": "BookingAgent"}
+  ]
+}

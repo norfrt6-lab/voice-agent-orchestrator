@@ -1,0 +1,52 @@
+{
+  "call_id": "CALL-004",
+  "timestamp": "2025-03-16T11:30:00Z",
+  "duration_seconds": 240.0,
+  "outcome": "booking_made",
+  "slots_collected": {
+    "customer_name": "Emma Wilson",
+    "customer_phone": "0433987654",
+    "service_type": "drain cleaning",
+    "preferred_date": "2025-03-19",
+    "preferred_time": "09:00",
+    "customer_address": "7 Station Road, Hawthorn VIC 3122",
+    "job_description": "Bathroom drain completely blocked"
+  },
+  "slots_confirmed": true,
+  "agents_used": ["IntakeAgent", "BookingAgent"],
+  "handoff_count": 1,
+  "error_count": 1,
+  "metadata": {
+    "corrections": 2,
+    "total_attempts": 9,
+    "scope_checks": 2,
+    "scope_violations": 0,
+    "hallucination_checks": 10,
+    "hallucinations_detected": 0,
+    "recoveries": 1
+  },
+  "turns": [
+    {"speaker": "agent", "text": "Good morning, Reliable Home Services. How can I help?", "timestamp": 0.0, "agent_id": "IntakeAgent"},
+    {"speaker": "user", "text": "My drain is completely blocked. I need someone out here.", "timestamp": 2.5},
+    {"speaker": "agent", "text": "I'll connect you to our booking team right away.", "timestamp": 4.5, "agent_id": "IntakeAgent", "tool_calls": ["route_to_booking"]},
+    {"speaker": "agent", "text": "Hi, I'll help you schedule a drain cleaning appointment. What's your name?", "timestamp": 7.0, "agent_id": "BookingAgent"},
+    {"speaker": "user", "text": "Emma Watson.", "timestamp": 9.0},
+    {"speaker": "agent", "text": "Thanks Emma. And your phone number?", "timestamp": 10.5, "agent_id": "BookingAgent", "tool_calls": ["record_customer_name"]},
+    {"speaker": "user", "text": "0433 987 654", "timestamp": 13.0},
+    {"speaker": "agent", "text": "Got it. Drain cleaning service noted. When would you like the appointment?", "timestamp": 15.5, "agent_id": "BookingAgent", "tool_calls": ["record_phone_number", "record_service_type"]},
+    {"speaker": "user", "text": "Wednesday if possible.", "timestamp": 18.0},
+    {"speaker": "agent", "text": "Wednesday the nineteenth. What time works?", "timestamp": 20.0, "agent_id": "BookingAgent", "tool_calls": ["record_preferred_date"]},
+    {"speaker": "user", "text": "First thing in the morning, like 9 AM.", "timestamp": 22.5},
+    {"speaker": "agent", "text": "9 AM. And the address for the service?", "timestamp": 24.5, "agent_id": "BookingAgent", "tool_calls": ["record_preferred_time"]},
+    {"speaker": "user", "text": "7 Station Road, Hawthorn, 3122.", "timestamp": 27.0},
+    {"speaker": "agent", "text": "And can you briefly describe the issue?", "timestamp": 29.5, "agent_id": "BookingAgent", "tool_calls": ["record_address"]},
+    {"speaker": "user", "text": "The bathroom drain is completely blocked. Water won't go down at all.", "timestamp": 32.0},
+    {"speaker": "agent", "text": "Here's what I have: name: Emma Watson, phone number: 0433987654, type of service: drain cleaning, preferred date: 2025-03-19, preferred time: 09:00, service address: 7 Station Road, Hawthorn VIC 3122. Does everything sound correct?", "timestamp": 35.0, "agent_id": "BookingAgent", "tool_calls": ["record_job_description", "confirm_booking_details"]},
+    {"speaker": "user", "text": "Actually, my last name is Wilson, not Watson. W-I-L-S-O-N.", "timestamp": 43.0},
+    {"speaker": "agent", "text": "Sorry about that! I've updated your name to Emma Wilson. Let me confirm again: name: Emma Wilson, phone number: 0433987654, type of service: drain cleaning, preferred date: 2025-03-19, preferred time: 09:00, service address: 7 Station Road, Hawthorn VIC 3122. Is that right now?", "timestamp": 46.0, "agent_id": "BookingAgent", "tool_calls": ["correct_detail"]},
+    {"speaker": "user", "text": "Yes, that's correct now.", "timestamp": 53.0},
+    {"speaker": "agent", "text": "Booking confirmed. Reference number: BK-G7H8I9. Drain cleaning on Wednesday the nineteenth at 9 AM. Anything else I can help with?", "timestamp": 55.0, "agent_id": "BookingAgent", "tool_calls": ["check_and_book"]},
+    {"speaker": "user", "text": "No, that's all. Thanks!", "timestamp": 59.0},
+    {"speaker": "agent", "text": "You're welcome, Emma. See you Wednesday morning!", "timestamp": 61.0, "agent_id": "BookingAgent"}
+  ]
+}

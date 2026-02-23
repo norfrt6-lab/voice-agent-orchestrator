@@ -1,0 +1,47 @@
+{
+  "call_id": "CALL-002",
+  "timestamp": "2025-03-15T14:15:00Z",
+  "duration_seconds": 220.0,
+  "outcome": "booking_made",
+  "slots_collected": {
+    "customer_name": "Maria Garcia",
+    "customer_phone": "0498123456",
+    "service_type": "electrical",
+    "preferred_date": "2025-03-20",
+    "preferred_time": "14:00",
+    "customer_address": "88 Lonsdale Street, Melbourne VIC 3000"
+  },
+  "slots_confirmed": true,
+  "agents_used": ["IntakeAgent", "BookingAgent"],
+  "handoff_count": 1,
+  "error_count": 0,
+  "metadata": {
+    "corrections": 0,
+    "total_attempts": 6,
+    "scope_checks": 1,
+    "scope_violations": 0,
+    "hallucination_checks": 10,
+    "hallucinations_detected": 0,
+    "recoveries": 0
+  },
+  "turns": [
+    {"speaker": "agent", "text": "Good afternoon, thanks for calling Reliable Home Services. How can I help you today?", "timestamp": 0.0, "agent_id": "IntakeAgent"},
+    {"speaker": "user", "text": "Hi, I need an electrician to look at some flickering lights in my office.", "timestamp": 3.0},
+    {"speaker": "agent", "text": "Sure, let me transfer you to our booking team to get that scheduled.", "timestamp": 5.5, "agent_id": "IntakeAgent", "tool_calls": ["route_to_booking"]},
+    {"speaker": "agent", "text": "Hello! I'll get your electrical appointment booked. Can I get your full name?", "timestamp": 8.0, "agent_id": "BookingAgent"},
+    {"speaker": "user", "text": "Maria Garcia.", "timestamp": 10.0},
+    {"speaker": "agent", "text": "Thanks Maria. And your phone number?", "timestamp": 11.5, "agent_id": "BookingAgent", "tool_calls": ["record_customer_name"]},
+    {"speaker": "user", "text": "0498 123 456", "timestamp": 14.0},
+    {"speaker": "agent", "text": "Got it. I've noted electrical service. When were you hoping to have the appointment?", "timestamp": 16.0, "agent_id": "BookingAgent", "tool_calls": ["record_phone_number", "record_service_type"]},
+    {"speaker": "user", "text": "This Saturday would be ideal.", "timestamp": 19.0},
+    {"speaker": "agent", "text": "Let me check Saturday for you. Unfortunately we don't have availability this Saturday. I can offer Thursday the twentieth at 9 AM, 10 AM, or 2 PM. Would any of those work?", "timestamp": 21.0, "agent_id": "BookingAgent", "tool_calls": ["record_preferred_date"]},
+    {"speaker": "user", "text": "Thursday at 2 PM works actually.", "timestamp": 26.0},
+    {"speaker": "agent", "text": "Thursday at 2 PM it is. What's the address for the service?", "timestamp": 28.0, "agent_id": "BookingAgent", "tool_calls": ["record_preferred_time"]},
+    {"speaker": "user", "text": "88 Lonsdale Street, Melbourne, VIC 3000.", "timestamp": 31.0},
+    {"speaker": "agent", "text": "Here's what I have: name: Maria Garcia, phone number: 0498123456, type of service: electrical, preferred date: 2025-03-20, preferred time: 14:00, service address: 88 Lonsdale Street, Melbourne VIC 3000. Does everything sound correct?", "timestamp": 34.0, "agent_id": "BookingAgent", "tool_calls": ["record_address", "confirm_booking_details"]},
+    {"speaker": "user", "text": "Yes, looks good.", "timestamp": 42.0},
+    {"speaker": "agent", "text": "Booking confirmed. Reference number: BK-D4E5F6. Electrical service on Thursday the twentieth at 2 PM. Is there anything else?", "timestamp": 44.0, "agent_id": "BookingAgent", "tool_calls": ["check_and_book"]},
+    {"speaker": "user", "text": "No, thank you!", "timestamp": 48.0},
+    {"speaker": "agent", "text": "Thanks Maria, we'll see you Thursday. Have a great day!", "timestamp": 50.0, "agent_id": "BookingAgent"}
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "call_id": "CALL-001",
+  "timestamp": "2025-03-15T10:30:00Z",
+  "duration_seconds": 185.0,
+  "outcome": "booking_made",
+  "slots_collected": {
+    "customer_name": "John Smith",
+    "customer_phone": "0412345678",
+    "service_type": "plumbing",
+    "preferred_date": "2025-03-18",
+    "preferred_time": "10:00",
+    "customer_address": "42 Oak Avenue, Richmond VIC 3121",
+    "job_description": "Kitchen sink leaking under the cabinet"
+  },
+  "slots_confirmed": true,
+  "agents_used": ["IntakeAgent", "BookingAgent"],
+  "handoff_count": 1,
+  "error_count": 0,
+  "metadata": {
+    "corrections": 0,
+    "total_attempts": 7,
+    "scope_checks": 2,
+    "scope_violations": 0,
+    "hallucination_checks": 8,
+    "hallucinations_detected": 0,
+    "recoveries": 0
+  },
+  "turns": [
+    {"speaker": "agent", "text": "Good morning, thanks for calling Reliable Home Services. My name is Alex. How can I help you today?", "timestamp": 0.0, "agent_id": "IntakeAgent"},
+    {"speaker": "user", "text": "Hi, I need to book a plumber. My kitchen sink is leaking.", "timestamp": 3.2},
+    {"speaker": "agent", "text": "I can definitely help you with that. Let me connect you with our booking specialist.", "timestamp": 5.1, "agent_id": "IntakeAgent", "tool_calls": ["route_to_booking"]},
+    {"speaker": "agent", "text": "Hi there, I'll help you get that plumbing appointment set up. Could I start with your full name please?", "timestamp": 8.0, "agent_id": "BookingAgent"},
+    {"speaker": "user", "text": "It's John Smith.", "timestamp": 10.5},
+    {"speaker": "agent", "text": "Got it, John. And what's the best phone number to reach you on?", "timestamp": 12.0, "agent_id": "BookingAgent", "tool_calls": ["record_customer_name"]},
+    {"speaker": "user", "text": "0412 345 678", "timestamp": 15.1},
+    {"speaker": "agent", "text": "Thanks. And I've noted you need plumbing service. What date works best for you?", "timestamp": 17.5, "agent_id": "BookingAgent", "tool_calls": ["record_phone_number", "record_service_type"]},
+    {"speaker": "user", "text": "Tuesday the eighteenth would be great.", "timestamp": 20.0},
+    {"speaker": "agent", "text": "Tuesday the eighteenth. And what time suits you best?", "timestamp": 22.0, "agent_id": "BookingAgent", "tool_calls": ["record_preferred_date"]},
+    {"speaker": "user", "text": "Around 10 in the morning if possible.", "timestamp": 25.0},
+    {"speaker": "agent", "text": "10 AM. And what's the address for the service?", "timestamp": 27.0, "agent_id": "BookingAgent", "tool_calls": ["record_preferred_time"]},
+    {"speaker": "user", "text": "42 Oak Avenue, Richmond, VIC 3121.", "timestamp": 30.0},
+    {"speaker": "agent", "text": "Great. Can you briefly describe the issue?", "timestamp": 33.0, "agent_id": "BookingAgent", "tool_calls": ["record_address"]},
+    {"speaker": "user", "text": "Yeah, the kitchen sink has been leaking under the cabinet. There's a small puddle forming.", "timestamp": 35.5},
+    {"speaker": "agent", "text": "Here's what I have: name: John Smith, phone number: 0412345678, type of service: plumbing, preferred date: 2025-03-18, preferred time: 10:00, service address: 42 Oak Avenue, Richmond VIC 3121. Does everything sound correct?", "timestamp": 39.0, "agent_id": "BookingAgent", "tool_calls": ["record_job_description", "confirm_booking_details"]},
+    {"speaker": "user", "text": "Yes, that's all correct.", "timestamp": 48.0},
+    {"speaker": "agent", "text": "Booking confirmed. Reference number: BK-A1B2C3. Plumbing service on 2025-03-18 at 10:00. Is there anything else I can help with?", "timestamp": 50.0, "agent_id": "BookingAgent", "tool_calls": ["check_and_book"]},
+    {"speaker": "user", "text": "No, that's everything. Thanks!", "timestamp": 55.0},
+    {"speaker": "agent", "text": "You're welcome, John. We'll see you on Tuesday. Have a great day!", "timestamp": 57.0, "agent_id": "BookingAgent"}
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "call_id": "CALL-005",
+  "timestamp": "2025-03-16T16:45:00Z",
+  "duration_seconds": 150.0,
+  "outcome": "escalated",
+  "slots_collected": {
+    "customer_name": "Tom Brown",
+    "customer_phone": "0455666777",
+    "service_type": "emergency repair",
+    "preferred_date": "",
+    "preferred_time": "",
+    "customer_address": "23 High Street, Prahran VIC 3181"
+  },
+  "slots_confirmed": false,
+  "agents_used": ["IntakeAgent", "EscalationAgent"],
+  "handoff_count": 1,
+  "error_count": 0,
+  "escalation_reason": "emergency",
+  "metadata": {
+    "corrections": 0,
+    "total_attempts": 3,
+    "scope_checks": 1,
+    "scope_violations": 0,
+    "hallucination_checks": 4,
+    "hallucinations_detected": 0,
+    "recoveries": 0
+  },
+  "turns": [
+    {"speaker": "agent", "text": "Reliable Home Services, how can I help?", "timestamp": 0.0, "agent_id": "IntakeAgent"},
+    {"speaker": "user", "text": "I've got a burst pipe! There's water everywhere in my kitchen!", "timestamp": 2.0},
+    {"speaker": "agent", "text": "I understand this is urgent. Let me get you to our emergency team right away.", "timestamp": 4.0, "agent_id": "IntakeAgent", "tool_calls": ["route_to_emergency"]},
+    {"speaker": "agent", "text": "I can hear this is an emergency. First, if you can safely reach your main water shutoff valve, please turn it off now. Can you tell me your name and address?", "timestamp": 7.0, "agent_id": "EscalationAgent", "tool_calls": ["provide_emergency_guidance"]},
+    {"speaker": "user", "text": "I'm Tom Brown, 23 High Street, Prahran. I've turned off the water but it's still dripping from the ceiling.", "timestamp": 12.0},
+    {"speaker": "agent", "text": "Okay Tom, you've done the right thing turning off the water. What's the best number to reach you on?", "timestamp": 15.0, "agent_id": "EscalationAgent"},
+    {"speaker": "user", "text": "0455 666 777", "timestamp": 18.0},
+    {"speaker": "agent", "text": "Got it. A team member will call you back within thirty minutes at 0455 666 777. For immediate emergencies, our emergency line is 1300-555-000. Is there anything else you need right now?", "timestamp": 20.0, "agent_id": "EscalationAgent", "tool_calls": ["record_callback_number", "complete_handoff"]},
+    {"speaker": "user", "text": "No, just please send someone quickly.", "timestamp": 26.0},
+    {"speaker": "agent", "text": "Absolutely, Tom. Stay safe and we'll have someone out to you as soon as possible.", "timestamp": 28.0, "agent_id": "EscalationAgent"}
+  ]
+}
