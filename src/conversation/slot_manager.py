@@ -79,7 +79,7 @@ def _validate_address(value: str) -> bool:
     return len(value.strip()) >= MIN_ADDRESS_LENGTH
 
 
-@dataclass
+@dataclass(frozen=True)
 class SlotDefinition:
     """Schema for a single slot to collect."""
 
