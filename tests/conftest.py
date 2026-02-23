@@ -14,6 +14,15 @@ from src.schemas.conversation_schema import (
     Speaker,
     TranscriptTurn,
 )
+from src.tools import availability, booking, customer
+
+
+@pytest.fixture(autouse=True)
+def _reset_tool_state():
+    """Reset mutable module-level state before each test for isolation."""
+    booking.reset()
+    customer.reset()
+    availability.reset()
 
 
 @pytest.fixture

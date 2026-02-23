@@ -23,7 +23,7 @@ class CustomerRecord(TypedDict):
     previous_bookings: int
     notes: str
 
-_customers: dict[str, CustomerRecord] = {
+_SEED_CUSTOMERS: dict[str, CustomerRecord] = {
     "0412345678": {
         "name": "John Smith",
         "phone": "0412345678",
@@ -41,6 +41,8 @@ _customers: dict[str, CustomerRecord] = {
         "notes": "",
     },
 }
+
+_customers: dict[str, CustomerRecord] = {k: dict(v) for k, v in _SEED_CUSTOMERS.items()}
 
 
 def lookup_customer(phone: str) -> Optional[CustomerRecord]:
@@ -70,3 +72,9 @@ def create_customer(
     _customers[cleaned] = customer
     logger.info("New customer created: %s (%s)", name, cleaned)
     return customer
+
+
+def reset() -> None:
+    """Restore customers to seed data. Used by test fixtures for isolation."""
+    _customers.clear()
+    _customers.update({k: dict(v) for k, v in _SEED_CUSTOMERS.items()})
