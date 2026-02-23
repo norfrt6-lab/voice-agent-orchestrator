@@ -1,6 +1,6 @@
 """Integration tests: state machine + slot manager + guardrails together."""
 
-from src.conversation.guardrails import GuardrailPipeline
+from src.conversation.guardrails import GuardrailPipeline, Severity
 from src.conversation.slot_manager import SlotManager
 from src.conversation.state_machine import (
     ConversationState,
@@ -107,7 +107,7 @@ class TestEmergencyEscalation:
 
         violations = guardrails.check_user_input("I have a gas leak!")
         assert len(violations) > 0
-        assert any(v.severity == "escalate" for v in violations)
+        assert any(v.severity == Severity.ESCALATE for v in violations)
 
         sm.transition(TransitionTrigger.INTENT_EMERGENCY)
         assert sm.current_state == ConversationState.ESCALATION

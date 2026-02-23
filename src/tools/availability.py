@@ -43,7 +43,9 @@ def _generate_schedule() -> dict[str, dict]:
 
         hours = [9, 10, 11, 12, 13] if date.weekday() == 5 else [8, 9, 10, 11, 13, 14, 15, 16, 17]
 
-        available_times = [f"{h:02d}:00" for h in hours if random.random() < AVAILABILITY_PROBABILITY]
+        available_times = [
+            f"{h:02d}:00" for h in hours if random.random() < AVAILABILITY_PROBABILITY
+        ]
         schedule[date_str] = {"day_name": day_name, "times": available_times}
 
     return schedule
