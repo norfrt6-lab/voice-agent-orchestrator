@@ -25,6 +25,12 @@ from src.utils import normalize_phone
 
 logger = logging.getLogger(__name__)
 
+# Validation thresholds
+MIN_NAME_LENGTH = 2
+MIN_PHONE_DIGITS = 7
+MAX_PHONE_DIGITS = 15
+MIN_ADDRESS_LENGTH = 5
+
 
 class SlotStatus(str, Enum):
     """Lifecycle status of a slot value."""
@@ -37,12 +43,12 @@ class SlotStatus(str, Enum):
 
 
 def _validate_name(value: str) -> bool:
-    return len(value.strip()) >= 2
+    return len(value.strip()) >= MIN_NAME_LENGTH
 
 
 def _validate_phone(value: str) -> bool:
     digits = re.sub(r"[^\d]", "", value)
-    return 7 <= len(digits) <= 15
+    return MIN_PHONE_DIGITS <= len(digits) <= MAX_PHONE_DIGITS
 
 
 def _validate_service(value: str) -> bool:
@@ -51,7 +57,7 @@ def _validate_service(value: str) -> bool:
 
 
 def _validate_address(value: str) -> bool:
-    return len(value.strip()) >= 5
+    return len(value.strip()) >= MIN_ADDRESS_LENGTH
 
 
 @dataclass
