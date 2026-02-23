@@ -154,3 +154,8 @@ def _find_next_available() -> Optional[str]:
         if day_data["times"]:
             return f"{date_str} {day_data['times'][0]}"
     return None
+
+
+def reset() -> None:
+    """Re-seed random state for deterministic tests."""
+    random.seed(SCHEDULE_SEED)

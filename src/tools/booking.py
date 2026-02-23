@@ -121,3 +121,8 @@ def reschedule_booking(booking_ref: str, new_date: str, new_time: str) -> Bookin
 def get_booking(booking_ref: str) -> Optional[BookingRecord]:
     """Retrieve a booking by reference number."""
     return _bookings.get(booking_ref)
+
+
+def reset() -> None:
+    """Clear all bookings. Used by test fixtures for isolation."""
+    _bookings.clear()
